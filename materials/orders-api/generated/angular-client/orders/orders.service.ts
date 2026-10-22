@@ -15,9 +15,13 @@ import {
   inject
 } from '@angular/core';
 
-import type {
-  DeepNonNullable
-} from '@orval/core';
+type DeepNonNullable<T> = T extends (...args: any[]) => any
+  ? T
+  : T extends readonly unknown[]
+    ? { [K in keyof T]: DeepNonNullable<NonNullable<T[K]>> }
+    : T extends object
+      ? { [K in keyof T]-?: DeepNonNullable<NonNullable<T[K]>> }
+      : NonNullable<T>;
 
 import {
   Observable
