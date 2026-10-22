@@ -1,0 +1,11 @@
+{
+  "name": "factory",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "tools/factory/src",
+  "projectType": "library",
+  "tags": ["type:tool", "scope:factory"],
+  "targets": {
+    "build": { "executor": "nx:run-commands", "outputs": ["{workspaceRoot}/dist/tools/factory"], "options": { "command": "tsc -p tools/factory/tsconfig.lib.json", "cwd": "{workspaceRoot}" } },
+    "test": { "executor": "nx:run-commands", "options": { "command": "vitest run --root . tools/factory --passWithNoTests", "cwd": "{workspaceRoot}" } }
+  }
+}

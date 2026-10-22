@@ -1,0 +1,6 @@
+packages:
+  - "materials/*"
+  - "emitters/*"
+  - "recipes/*"
+  - "products/*"
+  - "tools/*"

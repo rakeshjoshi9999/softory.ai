@@ -1,0 +1,11 @@
+{
+  "name": "sample-emitter",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "emitters/sample-emitter/src",
+  "projectType": "library",
+  "tags": ["type:emitter", "scope:factory"],
+  "targets": {
+    "build": { "executor": "nx:run-commands", "outputs": ["{workspaceRoot}/dist/emitters/sample-emitter"], "options": { "command": "tsc -p emitters/sample-emitter/tsconfig.lib.json", "cwd": "{workspaceRoot}" } },
+    "test": { "executor": "nx:run-commands", "options": { "command": "vitest run --root emitters/sample-emitter --passWithNoTests", "cwd": "{workspaceRoot}" } }
+  }
+}
