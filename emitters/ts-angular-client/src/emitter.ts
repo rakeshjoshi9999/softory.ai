@@ -6,24 +6,39 @@ import { join, relative, resolve } from 'node:path';
 export const emitterId = 'ts-angular-client';
 export const emitterVersion = '1.0.0';
 
-export interface EmitOptions {
+/** Minimal shared contract types (docs/architecture.md, "Plugin contracts"); move to a shared package when a second emitter needs them. */
+export type MaterialType = 'api-contract';
+
+export interface MaterialBundle {
+  name: string;
+  type: MaterialType;
   /** OpenAPI document (absolute path). */
-  input: string;
+  specPath: string;
+}
+
+export interface EmitOptions {
   /** Directory the client is written to (absolute path). Replaced on every run. */
-  output: string;
+  outputDir: string;
 }
 
 export interface EmittedPackage {
   emitter: { id: string; version: string };
-  /** Files relative to `output`, sorted. */
+  outputDir: string;
+  /** Files relative to `outputDir`, sorted. */
   files: string[];
 }
 
 /** Emitter contract: `accepts` api-contract materials, `target` angular. */
-export const emitter = {
+export const emitter: {
+  id: string;
+  version: string;
+  accepts: MaterialType[];
+  target: 'angular';
+  emit(input: MaterialBundle, opts: EmitOptions): Promise<EmittedPackage>;
+} = {
   id: emitterId,
   version: emitterVersion,
-  accepts: ['api-contract'] as const,
+  accepts: ['api-contract'],
   target: 'angular' as const,
   emit,
 };
@@ -36,9 +51,24 @@ async function listFiles(dir: string): Promise<string[]> {
     .sort();
 }
 
-export async function emit(opts: EmitOptions): Promise<EmittedPackage> {
-  const input = resolve(opts.input);
-  const output = resolve(opts.output);
+const DEEP_NON_NULLABLE = `type DeepNonNullable<T> = T extends (...args: any[]) => any
+  ? T
+  : T extends readonly unknown[]
+    ? { [K in keyof T]: DeepNonNullable<NonNullable<T[K]>> }
+    : T extends object
+      ? { [K in keyof T]-?: DeepNonNullable<NonNullable<T[K]>> }
+      : NonNullable<T>;`;
+
+/** Products must not depend on emitter tooling: replace `@orval/*` type imports with local definitions. */
+function inlineOrvalTypes(code: string): string {
+  const out = code.replace(/import type \{\s*DeepNonNullable\s*\} from '@orval\/core';\n/, `${DEEP_NON_NULLABLE}\n`);
+  if (/@orval\//.test(out)) throw new Error('emitted client still imports from @orval/*');
+  return out;
+}
+
+export async function emit(bundle: MaterialBundle, opts: EmitOptions): Promise<EmittedPackage> {
+  const input = resolve(bundle.specPath);
+  const output = resolve(opts.outputDir);
   const work = await mkdtemp(join(tmpdir(), 'ts-angular-client-'));
   try {
     // orval writes into a scratch dir so the result can be normalised before it lands in generated/.
@@ -64,9 +94,9 @@ export async function emit(opts: EmitOptions): Promise<EmittedPackage> {
     for (const f of await listFiles(output)) {
       const p = join(output, f);
       const text = await readFile(p, 'utf8');
-      await writeFile(p, text.replace(/\r\n/g, '\n'));
+      await writeFile(p, inlineOrvalTypes(text.replace(/\r\n/g, '\n')));
     }
-    return { emitter: { id: emitterId, version: emitterVersion }, files: await listFiles(output) };
+    return { emitter: { id: emitterId, version: emitterVersion }, outputDir: output, files: await listFiles(output) };
   } finally {
     await rm(work, { recursive: true, force: true });
   }

@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 import { emit } from '../../emitter.js';
 
 export interface EmitExecutorOptions {
@@ -8,7 +8,10 @@ export interface EmitExecutorOptions {
 
 export default async function runExecutor(options: EmitExecutorOptions, context: { root: string }) {
   try {
-    const result = await emit({ input: resolve(context.root, options.input), output: resolve(context.root, options.output) });
+    const result = await emit(
+      { name: basename(dirname(dirname(options.input))), type: 'api-contract', specPath: resolve(context.root, options.input) },
+      { outputDir: resolve(context.root, options.output) },
+    );
     console.log(`${result.emitter.id}@${result.emitter.version}: wrote ${result.files.length} files to ${options.output}`);
     return { success: true };
   } catch (e) {
