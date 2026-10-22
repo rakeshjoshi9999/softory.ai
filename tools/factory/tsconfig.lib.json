@@ -1,1 +1,1 @@
-{ "extends": "../../tsconfig.base.json", "compilerOptions": { "outDir": "../../dist/tools/factory", "rootDir": "src", "types": ["node"] }, "include": ["src/**/*.ts"], "exclude": ["src/**/*.spec.ts"] }
+{ "extends": "../../tsconfig.base.json", "compilerOptions": { "outDir": "../../dist/tools/factory", "rootDir": "src" }, "include": ["src/**/*.ts"], "exclude": ["src/**/*.spec.ts"] }
