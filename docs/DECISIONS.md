@@ -10,3 +10,5 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-22 · `sample-emitter`/`sample-product` placeholder projects exist only so the boundary lint test has tagged projects; remove once real ones exist · #1
 - 2026-10-22 · Builder run used the session-designated branch `claude/gifted-mendel-s8l5ww` rather than `claude/1-<slug>` · harness restricts pushes to that branch · #1
 - 2026-10-22 · No `packageManager` field in package.json; pnpm version is pinned by the CI workflow · the field conflicts with pnpm/action-setup and workflows are off-limits · #1
+- 2026-10-22 · New deps (open source): ajv (MIT), yaml (ISC), tsx (MIT), @types/node (MIT) · schema validation and running the TS CLI via `pnpm factory` · #2
+- 2026-10-22 · Root package.json gets a `factory` script (only change outside tools/) · `pnpm factory validate` must run from the repo root · #2
