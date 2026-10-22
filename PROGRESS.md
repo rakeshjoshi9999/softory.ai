@@ -4,23 +4,26 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Done
 - P1-01 scaffold: pnpm + Nx 24 workspace, five folders with READMEs, module-boundary lint rule + test (merged, PR #49)
-- P1-02 schemas + `pnpm factory validate` (PR pending review)
+- P1-02 schemas + `pnpm factory validate` (merged, PR #50; issue closed)
+- P1-03 orders-api material: `orders.tsp` → `generated/openapi.yaml`, Spectral ruleset in `tools/spectral/`, oasdiff gate vs `released/openapi.yaml` with a breaking fixture (branch `ccr-1e792cec-47hkd8`, PR not opened yet)
 
 ## In progress
 - (none)
 
 ## Next up
-- See open issues labelled `phase-1` and `ready`, lowest number first.
+- #4 P1-04 ts-angular-client emitter (input: `materials/orders-api/generated/openapi.yaml`).
 
 ## Resume notes
 <!-- The builder keeps one entry per in-progress issue: done so far, next step, open problems.
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
-- (none)
+- Two builder sessions both did #2 (PRs #50 and #51). Run one builder at a time, or have it claim an issue (label/assignee) before starting.
+- oasdiff needs Go on the CI runner (present on ubuntu-latest). OK, or prefer a pinned Docker image?
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
 - 2026-10-22 · #1 P1-01 · implemented on branch claude/gifted-mendel-s8l5ww (session-designated branch instead of claude/1-*) · PR opened
 - 2026-10-22 · #1 · builder fixed PR #49 review: removed `packageManager` from package.json (CI pnpm conflict) · https://github.com/rakeshjoshi9999/softory.ai/pull/49
 - 2026-10-22 · #2 P1-02 · implemented on claude/gifted-mendel-a7vzpd · PR opened
+- 2026-10-22 · #3 P1-03 · orders-api material + spectral + oasdiff gate, 7 tests, `nx run-many -t lint test build` green · branch ccr-1e792cec-47hkd8

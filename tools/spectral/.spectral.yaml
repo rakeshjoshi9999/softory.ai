@@ -1,0 +1,42 @@
+# Factory ruleset for OpenAPI materials. Every api-contract material is linted with it.
+extends:
+  - [spectral:oas, recommended]
+rules:
+  # Every operation needs a stable id: emitters derive client and controller method names from it.
+  operation-operationId: error
+  operation-operationId-unique: error
+  operation-tags: error
+  operation-description: error
+  # Example servers are fine for a contract; the deploy level sets real hosts.
+  oas3-api-servers: warn
+  info-contact: off
+  info-license: off
+  factory-paths-kebab-case:
+    description: Path segments must be kebab-case (parameters excepted).
+    message: "{{property}} is not kebab-case"
+    severity: error
+    given: $.paths
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        match: "^(/([a-z0-9]+(-[a-z0-9]+)*|\\{[a-zA-Z][a-zA-Z0-9]*\\}))+$"
+  factory-schema-description:
+    description: Every component schema needs a description; it becomes the doc comment in emitted code.
+    severity: error
+    given: $.components.schemas.*
+    then:
+      field: description
+      function: truthy
+  factory-error-responses-use-problem:
+    description: 4xx/5xx JSON responses must use the shared Problem schema.
+    resolved: false
+    severity: error
+    given: "$.paths.*.*.responses[?(@property.match(/^[45]/))].content['application/json'].schema"
+    then:
+      - field: $ref
+        function: truthy
+      - field: $ref
+        function: pattern
+        functionOptions:
+          match: "#/components/schemas/Problem$"
