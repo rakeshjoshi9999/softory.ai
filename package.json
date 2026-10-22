@@ -1,0 +1,29 @@
+{
+  "name": "@factory/source",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "nx": "nx"
+  },
+  "devDependencies": {
+    "@angular-devkit/core": "^21",
+    "@angular-devkit/schematics": "^21",
+    "@eslint/js": "^10.0.1",
+    "@nx/angular": "^24.0.0",
+    "@nx/eslint": "^24.0.0",
+    "@nx/eslint-plugin": "^24.0.0",
+    "@nx/js": "^24.0.0",
+    "@nx/nest": "^24.0.0",
+    "@nx/plugin": "^24.0.0",
+    "@nx/vite": "^24.0.0",
+    "eslint": "^10.13.0",
+    "nx": "^24.0.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^5.0.5"
+  }
+}

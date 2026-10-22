@@ -1,0 +1,11 @@
+{
+  "name": "sample-product",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "products/sample-product/src",
+  "projectType": "library",
+  "tags": ["type:product", "scope:factory"],
+  "targets": {
+    "build": { "executor": "nx:run-commands", "outputs": ["{workspaceRoot}/dist/products/sample-product"], "options": { "command": "tsc -p products/sample-product/tsconfig.lib.json", "cwd": "{workspaceRoot}" } },
+    "test": { "executor": "nx:run-commands", "options": { "command": "vitest run --root products/sample-product --passWithNoTests", "cwd": "{workspaceRoot}" } }
+  }
+}
