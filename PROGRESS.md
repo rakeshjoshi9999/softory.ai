@@ -8,7 +8,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P1-03 orders-api material: `orders.tsp` → `generated/openapi.yaml`, Spectral ruleset in `tools/spectral/`, oasdiff gate vs `released/openapi.yaml` with a breaking fixture (branch `ccr-1e792cec-47hkd8`, PR not opened yet)
 
 ## In progress
-- (none)
+- #8 P1-08 angular-remote recipe — PR opened, awaiting review
 
 ## Next up
 - #4 P1-04 ts-angular-client emitter (input: `materials/orders-api/generated/openapi.yaml`).
@@ -27,3 +27,4 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - 2026-10-22 · #1 · builder fixed PR #49 review: removed `packageManager` from package.json (CI pnpm conflict) · https://github.com/rakeshjoshi9999/softory.ai/pull/49
 - 2026-10-22 · #2 P1-02 · implemented on claude/gifted-mendel-a7vzpd · PR opened
 - 2026-10-22 · #3 P1-03 · orders-api material + spectral + oasdiff gate, 7 tests, `nx run-many -t lint test build` green · branch ccr-1e792cec-47hkd8
+- 2026-10-22 · #8 P1-08 · angular-remote recipe: generator + file-tree snapshot; generated remote passes eslint, ngc, vitest; `nx affected -t lint test build` green (14 tasks) · branch claude/gifted-mendel-x7cms9
