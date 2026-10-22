@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://softory.ai/schemas/product.schema.json",
+  "title": "Product",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": { "const": "factory/v1" },
+    "kind": { "const": "Product" },
+    "metadata": {
+      "type": "object",
+      "required": ["name", "owner"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "owner": { "type": "string", "minLength": 1 }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "required": ["recipe"],
+      "additionalProperties": false,
+      "properties": {
+        "recipe": { "type": "string", "pattern": "^[a-z][a-z0-9-]*@\\d+$" },
+        "consumes": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "pattern": "^[a-z][a-z0-9-]*@.+$" }
+        },
+        "delivery": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "pipeline": { "type": "string", "pattern": "^[a-z][a-z0-9-]*@\\d+$" },
+            "envs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true }
+          }
+        }
+      }
+    }
+  }
+}

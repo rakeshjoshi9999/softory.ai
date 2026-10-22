@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://softory.ai/schemas/material.schema.json",
+  "title": "Material",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": { "const": "factory/v1" },
+    "kind": { "const": "Material" },
+    "metadata": {
+      "type": "object",
+      "required": ["name", "type", "owner"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "type": { "enum": ["model", "api-contract", "event", "tokens", "component", "policy", "pipeline-block", "chart"] },
+        "owner": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "required": ["source", "format"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "format": { "type": "string", "minLength": 1 },
+        "validators": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "emitters": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*@\\d+$" }, "uniqueItems": true },
+        "dependsOn": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*@.+$" } },
+        "compatibility": { "enum": ["backward", "forward", "full", "none"] }
+      }
+    }
+  }
+}
