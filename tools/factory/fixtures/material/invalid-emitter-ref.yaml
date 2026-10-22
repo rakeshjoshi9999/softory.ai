@@ -1,0 +1,14 @@
+apiVersion: factory/v1
+kind: Material
+metadata:
+  name: orders-api
+  type: api-contract
+  owner: team-orders
+  version: 1.0.0
+spec:
+  source: orders.tsp
+  format: typespec
+  validators: [spectral, oasdiff-breaking]
+  emitters: [ts-angular-client, nest-server@1]
+  dependsOn: []
+  compatibility: backward
