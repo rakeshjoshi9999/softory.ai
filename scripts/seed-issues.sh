@@ -11,7 +11,7 @@ files=("$@")
 [ ${#files[@]} -eq 0 ] && files=(backlog/phase-*.json)
 
 for label in "ready:0e8a16" "planned:c2e0c6" "in-progress:fbca04" "blocked:b60205" "needs-human:d93f0b" \
-             "claude-approved:1d76db" "changes-requested:e99695" "recall:b60205" \
+             "needs-review:0052cc" "claude-approved:1d76db" "changes-requested:e99695" "recall:b60205" \
              "phase-1:5319e7" "phase-2:5319e7" "phase-3:5319e7" "phase-4:5319e7" \
              "from-feedback:c5def5" "triage:c5def5"; do
   gh label create "${label%%:*}" --color "${label##*:}" --force >/dev/null

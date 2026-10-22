@@ -50,7 +50,7 @@ Remove connectors a task does not need.
 | Name | Trigger | Prompt |
 | --- | --- | --- |
 | Factory builder | Schedule: hourly, at :07 | `Read prompts/builder.md in this repository and follow it exactly.` |
-| Factory reviewer | GitHub: pull_request opened and synchronize, base `main`, is draft false | `Read prompts/reviewer.md in this repository and follow it exactly for the pull request that triggered this run.` |
+| Factory reviewer | GitHub: Pull request → **labeled**; filters: Labels includes `needs-review`, Base branch equals `main`, Is draft equals false. The builder adds `needs-review` when a PR is ready and again after fixes; the reviewer removes it first thing, so it never re-triggers itself | `Read prompts/reviewer.md in this repository and follow it exactly for the pull request that triggered this run.` |
 | Factory docs | GitHub: pull_request closed, is merged true; plus Schedule weekly | `Read prompts/docs.md in this repository and follow it exactly.` |
 | Factory QA | Schedule: daily 01:13 | `Read prompts/qa.md in this repository and follow it exactly.` |
 | Factory planner | Schedule: daily 02:17 | `Read prompts/planner.md in this repository and follow it exactly.` |
@@ -63,10 +63,19 @@ Because each prompt points at a file in the repo, improving a loop is just a PR 
 For the fixer, generate its API token and add two GitHub Actions secrets: `FIXER_URL`
 (the task's fire URL) and `FIXER_TOKEN`. CI then hands every failure to it.
 
-## 6. Auto-merge rule (5 min)
-Add a small workflow or use GitHub's auto-merge manually at first. Recommended start:
-merge yourself for the first week while you read the reviewer's comments, then enable
-auto-merge for PRs that have `claude-approved`, green CI and no `needs-human` label.
+## 6. Auto-merge (5 min)
+`.github/workflows/auto-merge.yml` turns on GitHub auto-merge for a `claude/*` PR when it has
+`claude-approved` and neither `needs-human` nor `changes-requested`. GitHub then merges it
+once `verify` passes. New commits remove `claude-approved`, so the reviewer must approve again.
+
+- Requires **Settings → General → Allow auto-merge** to be on, and the `protect-main`
+  ruleset requiring the `verify` check (with 0 required approvals: Claude's PRs are opened
+  under your own account, and GitHub never lets you approve your own PR).
+- **First week:** keep it off. Go to **Actions → auto-merge → ⋯ → Disable workflow** and
+  merge PRs yourself after reading the reviewer's comments. Enable it again when the reviews
+  look trustworthy.
+- Optional: add a fine-grained token as secret `AUTOMERGE_TOKEN` (contents and pull
+  requests: write) so that merges also start the CI run on `main`.
 
 ## 7. Start and watch
 1. Open "Factory builder" and click **Run now**. It should pick issue #1.

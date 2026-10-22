@@ -1,0 +1,59 @@
+name: auto-merge
+
+# Turns on GitHub auto-merge for Claude's PRs once the reviewer approves them.
+# GitHub then merges only after the required `verify` check passes.
+#
+# Rules:
+# - only branches starting with `claude/`, not drafts
+# - needs the `claude-approved` label
+# - never with `needs-human` or `changes-requested`
+# - new commits after approval remove `claude-approved`, so the reviewer must look again
+#
+# Optional: add a fine-grained token as secret AUTOMERGE_TOKEN (contents + pull requests: write).
+# Merges made with the default GITHUB_TOKEN do not start other workflows, so the CI run on
+# `main` after a merge only happens when AUTOMERGE_TOKEN is set.
+
+on:
+  pull_request:
+    types: [opened, reopened, labeled, unlabeled, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  decide:
+    if: startsWith(github.event.pull_request.head.ref, 'claude/') && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || secrets.GITHUB_TOKEN }}
+      PR: ${{ github.event.pull_request.number }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: New commits reset the approval
+        if: github.event.action == 'synchronize'
+        run: |
+          gh pr edit "$PR" --repo "$REPO" --remove-label claude-approved || true
+          gh pr merge "$PR" --repo "$REPO" --disable-auto || true
+          echo "New commits pushed: approval removed, waiting for the reviewer."
+
+      - name: Enable or disable auto-merge
+        if: github.event.action != 'synchronize'
+        run: |
+          labels=$(gh pr view "$PR" --repo "$REPO" --json labels --jq '[.labels[].name] | join(",")')
+          draft=$(gh pr view "$PR" --repo "$REPO" --json isDraft --jq '.isDraft')
+          echo "labels: $labels  draft: $draft"
+
+          has() { [[ ",$labels," == *",$1,"* ]]; }
+
+          if [[ "$draft" == "false" ]] && has claude-approved && ! has needs-human && ! has changes-requested; then
+            gh pr merge "$PR" --repo "$REPO" --auto --squash --delete-branch
+            echo "Auto-merge enabled: GitHub merges when 'verify' passes."
+          else
+            gh pr merge "$PR" --repo "$REPO" --disable-auto || true
+            echo "Auto-merge off: needs claude-approved, no needs-human or changes-requested, not a draft."
+          fi
