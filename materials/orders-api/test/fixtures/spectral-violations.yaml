@@ -1,0 +1,35 @@
+# Breaks each factory Spectral rule once; the test asserts every rule fires.
+openapi: 3.0.0
+info:
+  title: Bad API
+  version: 1.0.0
+  description: Fixture that violates the factory ruleset.
+servers:
+  - url: https://api.example.com
+tags:
+  - name: Orders
+paths:
+  /orderItems:
+    get:
+      description: Uses camelCase path, no operationId, and a bare error body.
+      tags: [Orders]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        id:
+          type: string

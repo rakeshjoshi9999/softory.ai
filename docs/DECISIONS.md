@@ -12,3 +12,10 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-22 · No `packageManager` field in package.json; pnpm version is pinned by the CI workflow · the field conflicts with pnpm/action-setup and workflows are off-limits · #1
 - 2026-10-22 · New deps (open source): ajv (MIT), yaml (ISC), tsx (MIT), @types/node (MIT) · schema validation and running the TS CLI via `pnpm factory` · #2
 - 2026-10-22 · Root package.json gets a `factory` script (only change outside tools/) · `pnpm factory validate` must run from the repo root · #2
+- 2026-10-22 · Issue #2 closed: shipped by #50; #51 (this session's duplicate) closed unmerged · two builder sessions picked the same issue · #2
+- 2026-10-22 · New dev deps (open source): @typespec/{compiler,http,openapi,openapi3} ~1.17 (MIT), @stoplight/spectral-cli ~6.17 (Apache-2.0) · TypeSpec → OpenAPI and lint for api-contract materials · #3
+- 2026-10-22 · Spectral pulls in @scarf/scarf install telemetry; disabled via `scarfSettings.enabled: false` in root package.json · no phoning home from installs · #3
+- 2026-10-22 · oasdiff v1.32.1 (Apache-2.0) runs via `go run` from `tools/oasdiff/oasdiff.sh` (small step outside the issue's stated scope) · it has no official npm package; avoids committing binaries or trusting third-party npm repackagings; ubuntu-latest CI has Go · #3
+- 2026-10-22 · "Last released spec" is a committed snapshot at `materials/<name>/released/openapi.yaml` until the registry lands (P1-06) · oasdiff needs a base and nothing is published yet · #3
+- 2026-10-22 · `generated/openapi.yaml` is committed (in a `chore(generate):` commit); the material's test regenerates it and fails if it is stale · downstream emitters and reviewers read it without running TypeSpec · #3
+- 2026-10-22 · Material checks run as Vitest in the `test` target so CI's `nx affected -t lint test build` covers them; `emit-openapi`, `lint-openapi`, `breaking`, `validate` also exist as standalone targets · #3
