@@ -19,3 +19,6 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-22 · "Last released spec" is a committed snapshot at `materials/<name>/released/openapi.yaml` until the registry lands (P1-06) · oasdiff needs a base and nothing is published yet · #3
 - 2026-10-22 · `generated/openapi.yaml` is committed (in a `chore(generate):` commit); the material's test regenerates it and fails if it is stale · downstream emitters and reviewers read it without running TypeSpec · #3
 - 2026-10-22 · Material checks run as Vitest in the `test` target so CI's `nx affected -t lint test build` covers them; `emit-openapi`, `lint-openapi`, `breaking`, `validate` also exist as standalone targets · #3
+- 2026-10-22 · New dev dep (open source): orval ^7 (MIT) · generates the Angular HttpClient client in ts-angular-client · #4
+- 2026-10-22 · Emitter writes orval output to a temp dir then replaces `generated/angular-client/`; orval `prettier: false`, custom header, tags-split · deterministic, no dependence on local prettier config · #4
+- 2026-10-22 · Executor `@factory/ts-angular-client:emit` resolved through tsconfig.base paths; the orders-api target `emit-angular-client` is the only change outside the emitter · #4
