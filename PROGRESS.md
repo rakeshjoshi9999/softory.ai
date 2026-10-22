@@ -21,3 +21,4 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
 - 2026-10-22 · #1 P1-01 · implemented on branch claude/gifted-mendel-s8l5ww (session-designated branch instead of claude/1-*) · PR opened
+- 2026-10-22 · #1 · builder fixed PR #49 review: removed `packageManager` from package.json (CI pnpm conflict) · https://github.com/rakeshjoshi9999/softory.ai/pull/49

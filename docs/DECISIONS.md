@@ -9,3 +9,4 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-22 · New dev deps (all open source, MIT/Apache): nx, @nx/{js,eslint,angular,nest,plugin,vite,eslint-plugin}, typescript, eslint, @eslint/js, typescript-eslint, vitest, @angular-devkit/{core,schematics} · P1-01 workspace · #1
 - 2026-10-22 · `sample-emitter`/`sample-product` placeholder projects exist only so the boundary lint test has tagged projects; remove once real ones exist · #1
 - 2026-10-22 · Builder run used the session-designated branch `claude/gifted-mendel-s8l5ww` rather than `claude/1-<slug>` · harness restricts pushes to that branch · #1
+- 2026-10-22 · No `packageManager` field in package.json; pnpm version is pinned by the CI workflow · the field conflicts with pnpm/action-setup and workflows are off-limits · #1
