@@ -1,4 +1,5 @@
-import { copyFile, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import ts from 'typescript';
@@ -95,5 +96,57 @@ describe('nest-server emitter', () => {
       host,
     );
     expect(ts.getPreEmitDiagnostics(program).length).toBeGreaterThan(0);
+  });
+
+  describe('hostile specs', () => {
+    const spec = (mutate: (d: any) => void) => async () => {
+      const dir = await outDir();
+      const doc: any = {
+        openapi: '3.0.0',
+        paths: {
+          '/things/{id}': {
+            get: {
+              operationId: 'getThing',
+              tags: ['Things'],
+              parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+              responses: { '200': { description: 'ok', content: { 'application/json': { schema: { $ref: '#/components/schemas/Thing' } } } } },
+            },
+          },
+        },
+        components: { schemas: { Thing: { type: 'object', required: ['name'], properties: { name: { type: 'string' } } } } },
+      };
+      mutate(doc);
+      const specPath = join(dir, 'spec.yaml');
+      await writeFile(specPath, JSON.stringify(doc));
+      return emit({ name: 'x', type: 'api-contract', specPath }, { outputDir: join(dir, 'out') });
+    };
+
+    it('escapes comment terminators, quotes and enum descriptions', async () => {
+      const dir = await outDir();
+      const run = spec((d) => {
+        d.components.schemas.Kind = { type: 'string', enum: ['a'], description: 'x */ evil(); /*' };
+        d.paths['/things/{id}'].get.parameters.push({ name: 'q', in: 'query', description: 'y */ evil(); /*', schema: { type: 'string' } });
+        d.paths['/things/{id}'].get.parameters[0].name = 'id';
+        d.paths["/things/{id}/it's"] = d.paths['/things/{id}'];
+      });
+      const { outputDir, files } = await run();
+      void dir;
+      for (const f of files) {
+        const text = await readFile(join(outputDir, f), 'utf8');
+        expect(text, f).not.toMatch(/\*\/ evil/);
+      }
+      const ctrl = await readFile(join(outputDir, 'controllers/things.controller.base.ts'), 'utf8');
+      expect(ctrl).toContain("@Get('/things/:id/it\\'s')");
+    });
+
+    it.each([
+      ['a property name that is not an identifier', (d: any) => (d.components.schemas.Thing.properties['a-b; evil()'] = { type: 'string' })],
+      ['a schema name that is not an identifier', (d: any) => (d.components.schemas['Bad Name'] = { type: 'object', properties: {} })],
+      ['a non-numeric constraint', (d: any) => (d.components.schemas.Thing.properties.name.minLength = '1); evil((')],
+      ['an invalid pattern', (d: any) => (d.components.schemas.Thing.properties.name.pattern = '(')],
+      ['a path parameter that is not an identifier', (d: any) => (d.paths['/things/{id}'].get.parameters[0].name = "id'); evil(('")],
+    ])('refuses %s', async (_label, mutate) => {
+      await expect(spec(mutate)()).rejects.toThrow(/nest-server:/);
+    });
   });
 });

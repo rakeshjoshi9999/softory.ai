@@ -24,3 +24,4 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-22 · Emitter contract types are duplicated in nest-server (as in ts-angular-client, PR #53) until a shared package is justified · avoids cross-emitter dependency before the contract is settled · #5
 - 2026-10-22 · readOnly OpenAPI properties become `@IsOptional()` in DTOs · server-assigned fields (id, status) must not be required on input · #5
 - 2026-10-22 · Sample-service compile test runs the TS compiler on a fixture copied next to freshly emitted code (under node_modules/.cache) · keeps the fixture out of the Nx module-boundary graph · #5
+- 2026-10-22 · nest-server emitter fails the emit (throws) on non-identifier names, non-numeric constraints and uncompilable patterns; escapes comment terminators and quotes · spec text is untrusted input to generated code · #5

@@ -55,7 +55,31 @@ const camel = (s: string) => {
 };
 const kebab = (s: string) =>
   s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/[^A-Za-z0-9]+/g, '-').toLowerCase();
-const refName = (ref: string) => ref.split('/').pop()!;
+const IDENT = /^[A-Za-z_$][\w$]*$/;
+
+/** Spec-derived names become class, const and member names: refuse anything that is not a plain identifier. */
+function ident(name: unknown, what: string): string {
+  if (typeof name !== 'string' || !IDENT.test(name)) {
+    throw new Error(`nest-server: ${what} ${JSON.stringify(name)} is not a valid identifier`);
+  }
+  return name;
+}
+
+/** Numeric constraints are emitted as code: require a finite number. */
+function num(value: unknown, what: string): number {
+  const n = typeof value === 'string' && value.trim() === '' ? NaN : Number(value);
+  if (!Number.isFinite(n)) throw new Error(`nest-server: ${what} ${JSON.stringify(value)} is not a finite number`);
+  return n;
+}
+
+/** Text for a block comment; it cannot close the comment early. */
+const docText = (v: unknown) => String(v).replace(/\*\//g, '* /');
+
+/** Single-quoted string literal. */
+const quote = (v: string) =>
+  `'${JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'")}'`;
+
+const refName = (ref: string) => ident(ref.split('/').pop(), 'schema name');
 
 /** Resolve `allOf: [$ref]` wrappers that TypeSpec emits to add a description to a reference. */
 function unwrap(s: Schema): Schema {
@@ -106,13 +130,18 @@ function typeOf(raw: Schema, p: Prop, enums: Map<string, string[]>): void {
       }
       if (s.minLength !== undefined) {
         p.imports.add('MinLength');
-        p.decorators.add(`@MinLength(${s.minLength})`);
+        p.decorators.add(`@MinLength(${num(s.minLength, 'minLength')})`);
       }
       if (s.maxLength !== undefined) {
         p.imports.add('MaxLength');
-        p.decorators.add(`@MaxLength(${s.maxLength})`);
+        p.decorators.add(`@MaxLength(${num(s.maxLength, 'maxLength')})`);
       }
       if (s.pattern !== undefined) {
+        try {
+          new RegExp(s.pattern);
+        } catch {
+          throw new Error(`nest-server: pattern ${JSON.stringify(s.pattern)} is not a valid regular expression`);
+        }
         p.imports.add('Matches');
         p.decorators.add(`@Matches(new RegExp(${JSON.stringify(s.pattern)}))`);
       }
@@ -125,11 +154,11 @@ function typeOf(raw: Schema, p: Prop, enums: Map<string, string[]>): void {
       p.decorators.add(s.type === 'integer' ? '@IsInt()' : '@IsNumber()');
       if (s.minimum !== undefined) {
         p.imports.add('Min');
-        p.decorators.add(`@Min(${s.minimum})`);
+        p.decorators.add(`@Min(${num(s.minimum, 'minimum')})`);
       }
       if (s.maximum !== undefined) {
         p.imports.add('Max');
-        p.decorators.add(`@Max(${s.maximum})`);
+        p.decorators.add(`@Max(${num(s.maximum, 'maximum')})`);
       }
       return;
     }
@@ -146,11 +175,11 @@ function typeOf(raw: Schema, p: Prop, enums: Map<string, string[]>): void {
       p.decorators.add('@IsArray()');
       if (s.minItems !== undefined) {
         p.imports.add('ArrayMinSize');
-        p.decorators.add(`@ArrayMinSize(${s.minItems})`);
+        p.decorators.add(`@ArrayMinSize(${num(s.minItems, 'minItems')})`);
       }
       if (s.maxItems !== undefined) {
         p.imports.add('ArrayMaxSize');
-        p.decorators.add(`@ArrayMaxSize(${s.maxItems})`);
+        p.decorators.add(`@ArrayMaxSize(${num(s.maxItems, 'maxItems')})`);
       }
       // Element-level checks: nested DTOs validate each item.
       if (inner.dtos.size && inner.ts.endsWith('Dto')) {
@@ -186,10 +215,10 @@ function renderProp(name: string, raw: Schema, required: boolean, enums: Map<str
   }
   const lines: string[] = [];
   const doc = raw.description ?? s.description;
-  if (doc) lines.push(`  /** ${String(doc).replace(/\*\//g, '* /')} */`);
+  if (doc) lines.push(`  /** ${docText(doc)} */`);
   if (optional) lines.push('  @IsOptional()');
   for (const d of [...p.decorators].sort()) lines.push(`  ${d}`);
-  lines.push(`  ${name}${optional ? '?' : '!'}: ${p.ts};`);
+  lines.push(`  ${ident(name, 'property name')}${optional ? '?' : '!'}: ${p.ts};`);
   return { text: lines.join('\n'), p };
 }
 
@@ -206,6 +235,7 @@ function renderDto(name: string, schema: Schema, enums: Map<string, string[]>): 
     for (const d of p.dtos) if (d !== name) refs.add(d);
     if (text.includes('@Type(')) usesType = true;
   }
+  ident(name, 'schema name');
   const out: string[] = [HEADER];
   if (imports.size) out.push(`import { ${[...imports].sort().join(', ')} } from 'class-validator';`);
   if (usesType) out.push(`import { Type } from 'class-transformer';`);
@@ -217,14 +247,15 @@ function renderDto(name: string, schema: Schema, enums: Map<string, string[]>): 
     );
   }
   out.push('');
-  if (schema.description) out.push(`/** ${String(schema.description).replace(/\*\//g, '* /')} */`);
+  if (schema.description) out.push(`/** ${docText(schema.description)} */`);
   out.push(`export class ${name}Dto {`, props.join('\n\n'), '}', '');
   return out.join('\n');
 }
 
 function renderEnum(name: string, schema: Schema): string {
+  ident(name, 'enum name');
   const values = schema.enum.map((v: string) => JSON.stringify(v)).join(', ');
-  const doc = schema.description ? `/** ${schema.description} */\n` : '';
+  const doc = schema.description ? `/** ${docText(schema.description)} */\n` : '';
   return `${HEADER}\n${doc}export const ${name}Values = [${values}] as const;\nexport type ${name} = (typeof ${name}Values)[number];\n`;
 }
 
@@ -275,12 +306,12 @@ function renderController(tag: string, ops: Operation[], enums: Map<string, stri
     for (const prm of op.params.filter((x) => x.in === 'path')) {
       const p: Prop = { ts: 'unknown', decorators: new Set(), imports: new Set(), dtos: new Set() };
       typeOf(prm.schema, p, enums);
-      args.push(`@Param('${prm.name}') ${prm.name}: ${p.ts}`);
+      args.push(`@Param(${quote(prm.name)}) ${ident(prm.name, 'path parameter name')}: ${p.ts}`);
       callArgs.push(prm.name);
     }
     const query = op.params.filter((x) => x.in === 'query');
     if (query.length) {
-      const qName = `${pascal(op.id)}Query`;
+      const qName = `${pascal(ident(op.id, 'operationId'))}Query`;
       args.push(`@Query() query: ${qName}`);
       callArgs.push('query');
       queryClasses.push(renderQueryClass(qName, query, enums));
@@ -295,9 +326,9 @@ function renderController(tag: string, ops: Operation[], enums: Map<string, stri
     const retDto = ret.replace(/\[\]$/, '');
     if (/Dto$/.test(retDto)) dtoImports.add(retDto);
     const path = op.path.replace(/\{(\w+)\}/g, ':$1');
-    if (op.doc) methods.push(`  /** ${op.doc.replace(/\*\//g, '* /')} */`);
+    if (op.doc) methods.push(`  /** ${docText(op.doc)} */`);
     methods.push(
-      `  @${verb}('${path}')`,
+      `  @${verb}(${quote(path)})`,
       `  @HttpCode(${op.successStatus})`,
       `  ${camel(op.id)}Route(${args.join(', ')}): Promise<${ret}> | ${ret} {`,
       `    return this.${camel(op.id)}(${callArgs.join(', ')});`,
@@ -338,11 +369,11 @@ function renderQueryClass(name: string, params: Operation['params'], enums: Map<
     const p: Prop = { ts: 'unknown', decorators: new Set(), imports: new Set(), dtos: new Set() };
     typeOf(prm.schema, p, enums);
     const parts: string[] = [];
-    if (prm.description) parts.push(`  /** ${prm.description} */`);
+    if (prm.description) parts.push(`  /** ${docText(prm.description)} */`);
     if (!prm.required) parts.push('  @IsOptional()');
     if (p.ts === 'number') parts.push('  @Type(() => Number)');
     for (const d of [...p.decorators].sort()) parts.push(`  ${d}`);
-    parts.push(`  ${prm.name}${prm.required ? '!' : '?'}: ${p.ts};`);
+    parts.push(`  ${ident(prm.name, 'query parameter name')}${prm.required ? '!' : '?'}: ${p.ts};`);
     body.push(parts.join('\n'));
   }
   lines.push(body.join('\n\n'), '}');
