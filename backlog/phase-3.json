@@ -1,0 +1,180 @@
+[
+  {
+    "id": "P3-01",
+    "title": "Control plane API as a material",
+    "goal": "Define the control plane's own API in TypeSpec so the factory builds its own product.",
+    "acceptance": [
+      "`materials/control-plane-api/` defines resources for materials, material versions, products, product builds, runs, run steps, gate results and waivers",
+      "Spectral and oasdiff pass; Angular client and NestJS server packages are released to Verdaccio",
+      "docs/architecture.md links the resource model to the control plane modules"
+    ],
+    "scope": "materials/control-plane-api.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P3-02",
+    "title": "control-plane-api service with catalog endpoints",
+    "goal": "The backend for the catalog, reading from the material graph.",
+    "acceptance": [
+      "`products/control-plane-api` is assembled with the nestjs-service recipe and implements the generated controllers",
+      "Catalog endpoints list and search materials, versions, owners, states and consuming products, backed by the graph service",
+      "Pagination and filtering are covered by tests; contract tests pass against the generated client"
+    ],
+    "scope": "products/control-plane-api.",
+    "blockedBy": ["P3-01"],
+    "labels": []
+  },
+  {
+    "id": "P3-03",
+    "title": "Recipe: angular-shell with Native Federation",
+    "goal": "A golden-path host that loads remotes from a manifest.",
+    "acceptance": [
+      "`recipes/angular-shell` generates a standalone Angular host using Native Federation with a remote manifest, layout, navigation and error boundary per remote",
+      "A remote that fails to load shows an error panel and does not break the shell (test proves it)",
+      "Generated shell passes lint, test and build"
+    ],
+    "scope": "recipes/angular-shell.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P3-04",
+    "title": "Control plane shell with Keycloak sign-in",
+    "goal": "One app that hosts every control plane module behind SSO.",
+    "acceptance": [
+      "`products/control-plane-shell` is assembled from the angular-shell recipe",
+      "Sign-in uses Keycloak via OIDC (docker compose realm export checked in, no real secrets)",
+      "Routes are guarded; the API rejects unauthenticated calls",
+      "Playwright test signs in with a test user and reaches the home page"
+    ],
+    "scope": "products/control-plane-shell, auth config, docker compose.",
+    "blockedBy": ["P3-02", "P3-03"],
+    "labels": ["needs-human"]
+  },
+  {
+    "id": "P3-05",
+    "title": "Catalog remote",
+    "goal": "Browse what the factory makes.",
+    "acceptance": [
+      "`products/catalog-remote` (angular-remote) lists materials and products with search, filters by type, owner and state, and a detail page with versions and consumers",
+      "Uses only the generated control-plane-api client",
+      "Playwright test covers search and detail navigation; axe-core finds no serious accessibility issues"
+    ],
+    "scope": "products/catalog-remote.",
+    "blockedBy": ["P3-04"],
+    "labels": []
+  },
+  {
+    "id": "P3-06",
+    "title": "Run orchestrator with Temporal: spec-change workflow",
+    "goal": "Turn Flow B into a durable, observable workflow.",
+    "acceptance": [
+      "`products/run-orchestrator` (nestjs-service) runs a Temporal worker; Temporal dev server added to docker compose",
+      "Workflow `specChange` runs validate, impact, release and propagation as activities that call the existing factory CLI",
+      "Each step's status and evidence are written through the control-plane-api runs endpoints",
+      "Temporal test environment covers success, a failed validation, and retry of a flaky step"
+    ],
+    "scope": "products/run-orchestrator, docker compose.",
+    "blockedBy": ["P3-02"],
+    "labels": []
+  },
+  {
+    "id": "P3-07",
+    "title": "Run control room remote",
+    "goal": "A live view of every run: steps, evidence and approvals.",
+    "acceptance": [
+      "`products/runs-remote` lists active and recent runs and shows a run's steps updating live over server-sent events",
+      "Each step shows its evidence links; failed steps show the error",
+      "A run waiting for approval shows Approve and Reject buttons that call the API (approval recorded with the user)",
+      "Playwright test drives a fake run from start to finish"
+    ],
+    "scope": "products/runs-remote, SSE endpoint in control-plane-api.",
+    "blockedBy": ["P3-05", "P3-06"],
+    "labels": []
+  },
+  {
+    "id": "P3-08",
+    "title": "Gate center: gate results ingestion and UI",
+    "goal": "One place that shows why the line stopped.",
+    "acceptance": [
+      "`POST /gate-results` accepts verdicts with evidence from CI (authenticated with a CI token)",
+      "Dagger gate blocks post their results after each run",
+      "`products/gates-remote` shows results per product and PR, and lets an authorised user add a waiver with expiry and reason",
+      "Expired waivers stop applying (test proves it)"
+    ],
+    "scope": "control-plane-api, pipelines/dagger, products/gates-remote.",
+    "blockedBy": ["P3-05"],
+    "labels": []
+  },
+  {
+    "id": "P3-09",
+    "title": "Product studio: create a product from a recipe",
+    "goal": "Flow A starts with a form, not a terminal.",
+    "acceptance": [
+      "Each recipe publishes a JSON Schema for its product.yaml options",
+      "`products/product-studio-remote` renders the form with Formly, validates it, and on submit opens a PR adding `products/<name>/product.yaml`",
+      "The PR triggers assembly through the run orchestrator",
+      "Playwright test fills the form and asserts the PR payload (GitHub API mocked)"
+    ],
+    "scope": "recipes/ schemas, products/product-studio-remote, control-plane-api.",
+    "blockedBy": ["P3-06"],
+    "labels": []
+  },
+  {
+    "id": "P3-10",
+    "title": "Material studio: edit specs with live validation",
+    "goal": "Edit a material and see its effects before opening a PR.",
+    "acceptance": [
+      "`products/material-studio-remote` opens a material's TypeSpec source in Monaco",
+      "Edits are validated live (TypeSpec compile plus Spectral) through an API endpoint; errors show inline",
+      "A preview tab shows the emitted OpenAPI and the generated Angular client for the edited source",
+      "Save opens a PR; the impact report from P2-06 appears on it"
+    ],
+    "scope": "products/material-studio-remote, control-plane-api.",
+    "blockedBy": ["P3-05"],
+    "labels": []
+  },
+  {
+    "id": "P3-11",
+    "title": "Event bus: NATS for factory events",
+    "goal": "Bays talk through events instead of direct calls.",
+    "acceptance": [
+      "NATS JetStream added to docker compose and the platform charts",
+      "Events `spec.changed`, `material.released`, `gate.result`, `image.pushed`, `material.recalled` have AsyncAPI definitions as a material",
+      "The registry hook, CI gate blocks and recall command publish events; the orchestrator subscribes and starts workflows",
+      "Integration test publishes `spec.changed` and observes a `specChange` workflow start"
+    ],
+    "scope": "materials/factory-events, products/run-orchestrator, tools/.",
+    "blockedBy": ["P3-06"],
+    "labels": []
+  },
+  {
+    "id": "P3-12",
+    "title": "Package the control plane: Helm chart and one-command dev stack",
+    "goal": "A design partner can install it.",
+    "acceptance": [
+      "`deploy/charts/control-plane` installs every control plane service and remote using factory-lib",
+      "`scripts/dev-up.sh` starts the full stack locally with docker compose and seeds demo data",
+      "Install on the kind cluster from P2-10 passes a smoke test of sign-in, catalog and a run",
+      "docs/install.md covers prerequisites, install, upgrade and uninstall"
+    ],
+    "scope": "deploy/, scripts/, docs/.",
+    "blockedBy": ["P3-07", "P3-08", "P3-09", "P3-10", "P3-11"],
+    "labels": ["needs-human"]
+  },
+  {
+    "id": "P3-13",
+    "title": "Gate 3 package: design-partner onboarding",
+    "goal": "Everything a design partner needs to run Flow A without us.",
+    "acceptance": [
+      "docs/design-partner.md walks through install, connecting a Git host, creating a first product and reading a run",
+      "A seeded demo organisation shows each module with realistic data",
+      "A recorded checklist run of Flow A on a fresh install passes",
+      "PROGRESS.md records the evidence and the planner opens `Gate 3 review` for a human"
+    ],
+    "scope": "docs/, seed data.",
+    "blockedBy": ["P3-12"],
+    "labels": []
+  }
+]

@@ -1,0 +1,168 @@
+[
+  {
+    "id": "P2-01",
+    "title": "Dagger pipeline module: lint, test and build blocks",
+    "goal": "Move CI logic into versioned, locally runnable pipeline blocks so every product shares one pipeline.",
+    "acceptance": [
+      "`pipelines/dagger/` is a Dagger module in TypeScript exposing `lint`, `test` and `build` functions that take a source directory",
+      "`dagger call ci --src=.` runs lint, test and build for affected projects and exits non-zero on any failure",
+      "The GitHub Actions workflow calls `dagger call ci` instead of running Nx directly (PR labelled needs-human because it edits .github/)",
+      "A unit test for the module runs against a fixture workspace"
+    ],
+    "scope": "pipelines/dagger and the CI workflow call site.",
+    "blockedBy": [],
+    "labels": ["needs-human"]
+  },
+  {
+    "id": "P2-02",
+    "title": "SBOM and signing blocks for material packages",
+    "goal": "Every released material package gets an SBOM and a signature consumers can verify.",
+    "acceptance": [
+      "Dagger functions `sbom` (Syft, SPDX JSON) and `sign` (Cosign, key from an env var, keyless optional later) exist",
+      "`pnpm factory release orders-api` now writes `<package>.sbom.spdx.json` and `<package>.sig` next to each published tarball and uploads them to the registry storage",
+      "`pnpm factory verify @factory/orders-api-angular@<version>` checks the signature and fails on a tampered tarball (test proves it)",
+      "Test keys live only in test fixtures; real keys come from secrets and are never committed"
+    ],
+    "scope": "pipelines/dagger, tools/ release and verify commands.",
+    "blockedBy": ["P2-01"],
+    "labels": []
+  },
+  {
+    "id": "P2-03",
+    "title": "Provenance statements for every release",
+    "goal": "Record exactly which inputs produced each package, so impact analysis and recalls are possible.",
+    "acceptance": [
+      "Each release writes an in-toto Statement (SLSA provenance predicate) listing: source commit, material name and version, every emitter id and version, and output digests",
+      "The statement is signed with the same key as the package",
+      "`pnpm factory provenance @factory/orders-api-angular@<version>` prints the statement in readable form",
+      "JSON Schema test validates the statement shape"
+    ],
+    "scope": "tools/ and pipelines/dagger.",
+    "blockedBy": ["P2-02"],
+    "labels": []
+  },
+  {
+    "id": "P2-04",
+    "title": "Material graph service v1 (built with the nestjs-service recipe)",
+    "goal": "A queryable graph of materials, packages, products and versions, built by the factory itself.",
+    "acceptance": [
+      "`products/graph-service` is assembled from a product.yaml with the nestjs-service recipe",
+      "PostgreSQL schema (migrations checked in) stores nodes Material, MaterialVersion, Package, Product, ProductBuild and edges depends_on, emitted_by, consumed_by",
+      "`POST /ingest/provenance` accepts a provenance statement; `POST /ingest/lockfile` accepts a product's resolved material versions",
+      "`GET /materials/{name}/versions/{version}/consumers` returns every product build using it",
+      "Integration tests run against PostgreSQL via Testcontainers (or a docker compose service in CI)"
+    ],
+    "scope": "products/graph-service, materials for its API, docker compose.",
+    "blockedBy": ["P2-03"],
+    "labels": []
+  },
+  {
+    "id": "P2-05",
+    "title": "Two more products consuming orders-api",
+    "goal": "Gate 2 needs three consumers to prove propagation.",
+    "acceptance": [
+      "`products/orders-admin-ui` (angular-remote) and `products/orders-report-worker` (nestjs-service) are assembled from product.yaml files consuming orders-api@^1",
+      "Both pass lint, test and build and have a contract test against orders-service",
+      "Their lockfiles are ingested into the graph service by `pnpm factory graph sync`"
+    ],
+    "scope": "products/ and tools/ graph sync command.",
+    "blockedBy": ["P2-04"],
+    "labels": []
+  },
+  {
+    "id": "P2-06",
+    "title": "Impact analysis command and PR comment",
+    "goal": "Show what a material change breaks before it merges.",
+    "acceptance": [
+      "`pnpm factory impact materials/orders-api` classifies the change (patch, minor, breaking via oasdiff), lists affected products from the graph, and runs a dry-run assembly plus contract tests for each",
+      "Output is Markdown suitable for a PR comment and JSON for machines",
+      "A CI job posts the Markdown as a PR comment on material changes (needs-human: edits .github/)",
+      "Tests cover a patch change with zero failures and a breaking change that lists all three consumers"
+    ],
+    "scope": "tools/ impact command and one CI job.",
+    "blockedBy": ["P2-05"],
+    "labels": ["needs-human"]
+  },
+  {
+    "id": "P2-07",
+    "title": "Renovate propagation of material releases",
+    "goal": "When a material releases, every consumer gets an upgrade PR automatically.",
+    "acceptance": [
+      "`renovate.json` groups `@factory/*` packages, points at the Verdaccio registry, and auto-merges patch updates when CI is green",
+      "A documented dry run (`renovate --dry-run=full` against a fixture) shows upgrade branches for all three consumer products",
+      "docs/architecture.md explains how releases propagate"
+    ],
+    "scope": "renovate.json, docs.",
+    "blockedBy": ["P2-05"],
+    "labels": []
+  },
+  {
+    "id": "P2-08",
+    "title": "Lifecycle states and recall command",
+    "goal": "Mark a bad material version recalled and drive every consumer off it.",
+    "acceptance": [
+      "Material versions carry a state (draft, released, deprecated, recalled) stored in the graph service",
+      "`pnpm factory recall @factory/orders-api-angular@<version> --reason \"...\"` sets the state, runs `npm deprecate` on Verdaccio, and opens one GitHub issue per affected product labelled `recall`",
+      "`factory assemble` refuses to resolve a recalled version and prints the reason",
+      "Tests cover recall, refusal and the issue payloads (GitHub API mocked)"
+    ],
+    "scope": "tools/, products/graph-service.",
+    "blockedBy": ["P2-04"],
+    "labels": []
+  },
+  {
+    "id": "P2-09",
+    "title": "Container images and Helm library chart",
+    "goal": "Every product kind ships the same way.",
+    "acceptance": [
+      "Dagger function `image` builds an OCI image per product (static nginx-unprivileged for Angular remotes, distroless Node for NestJS services) and signs it",
+      "`deploy/charts/factory-lib` is a Helm library chart with templates for service and static-site workloads (probes, resources, security context)",
+      "Each product kind has a thin chart depending on factory-lib; `helm lint` and `kubeconform` pass in CI",
+      "Recipes generate the thin chart for new products"
+    ],
+    "scope": "pipelines/dagger, deploy/charts, recipes/.",
+    "blockedBy": ["P2-01"],
+    "labels": []
+  },
+  {
+    "id": "P2-10",
+    "title": "GitOps on a local kind cluster with signature enforcement",
+    "goal": "Prove deploys are automatic and unsigned images are refused.",
+    "acceptance": [
+      "`scripts/platform-up.sh` creates a kind cluster with Argo CD, Kyverno and a local registry",
+      "An ApplicationSet discovers every `products/*/deploy` folder and syncs it",
+      "A Kyverno policy rejects images without a valid Cosign signature; a test deploys an unsigned image and expects rejection",
+      "A CI job runs this end to end on kind (needs-human: edits .github/ and infrastructure)"
+    ],
+    "scope": "deploy/, scripts/, one CI job.",
+    "blockedBy": ["P2-09"],
+    "labels": ["needs-human"]
+  },
+  {
+    "id": "P2-11",
+    "title": "Vulnerability scan block that can trigger a recall",
+    "goal": "Close the loop from a found CVE to a recall.",
+    "acceptance": [
+      "Dagger function `scan` runs Trivy on images and SBOMs and outputs findings as JSON",
+      "A nightly job scans every released package and image; a critical finding calls `factory recall` with the CVE id as the reason (dry-run flag for tests)",
+      "Test with a fixture SBOM containing a known critical CVE produces a recall in dry-run mode"
+    ],
+    "scope": "pipelines/dagger, tools/.",
+    "blockedBy": ["P2-08", "P2-09"],
+    "labels": []
+  },
+  {
+    "id": "P2-12",
+    "title": "Gate 2 demo: a spec change reaches three products with no manual steps",
+    "goal": "Prove Gate 2 end to end.",
+    "acceptance": [
+      "`scripts/gate2-demo.sh` adds a non-breaking field to orders.tsp, merges it, releases, and waits until all three consumers have merged upgrade PRs with green CI",
+      "The graph service shows all three products on the new version",
+      "A second run with a breaking change is stopped by the impact check before release",
+      "PROGRESS.md records the evidence and the planner opens `Gate 2 review` for a human"
+    ],
+    "scope": "scripts/, PROGRESS.md.",
+    "blockedBy": ["P2-06", "P2-07", "P2-10", "P2-11"],
+    "labels": []
+  }
+]

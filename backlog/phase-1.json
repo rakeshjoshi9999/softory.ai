@@ -1,0 +1,160 @@
+[
+  {
+    "id": "P1-01",
+    "title": "Scaffold the Nx workspace and factory folders",
+    "goal": "Create the pnpm + Nx monorepo every later task builds on.",
+    "acceptance": [
+      "`pnpm install` and `pnpm nx graph --file=graph.json` succeed on a fresh clone",
+      "Folders `materials/`, `emitters/`, `recipes/`, `products/`, `tools/` exist, each with a README stating its rule from CLAUDE.md",
+      "@nx/angular, @nx/nest and @nx/plugin are installed; TypeScript strict mode is on",
+      "@nx/enforce-module-boundaries is configured with `type:*` tags and a lint test proves a product importing an emitter fails",
+      "`pnpm nx run-many -t lint test build` exits 0"
+    ],
+    "scope": "Root config files and the five folders only.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P1-02",
+    "title": "Define material.yaml and product.yaml schemas with a validate command",
+    "goal": "Make materials and products machine-checkable so the factory can trust them.",
+    "acceptance": [
+      "JSON Schemas for material.yaml and product.yaml live in `tools/schemas/` and match the architecture doc",
+      "`pnpm factory validate <path>` validates a file and exits non-zero with a readable error on invalid input",
+      "Vitest covers one valid and three invalid examples for each schema"
+    ],
+    "scope": "tools/ only.",
+    "blockedBy": [
+      "P1-01"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P1-03",
+    "title": "First material: orders API in TypeSpec emitting OpenAPI",
+    "goal": "Create the first real raw material and its validation gates.",
+    "acceptance": [
+      "`materials/orders-api/` holds `orders.tsp` (list, get, create order) and a valid material.yaml",
+      "`pnpm nx run orders-api:emit-openapi` writes `generated/openapi.yaml`",
+      "Spectral lint runs with a ruleset in `tools/spectral/` and passes",
+      "oasdiff compares against the last released spec and fails on a breaking change (proved by a test fixture)"
+    ],
+    "scope": "materials/orders-api and tools/spectral.",
+    "blockedBy": [
+      "P1-02"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P1-04",
+    "title": "Emitter: typed Angular client from OpenAPI",
+    "goal": "Turn an API material into a client Angular products can consume.",
+    "acceptance": [
+      "`emitters/ts-angular-client` is an Nx plugin whose executor implements the Emitter contract from the architecture doc",
+      "Running it on orders-api produces an Angular HttpClient-based client with typed models via orval",
+      "Output goes to the material's `generated/angular-client/` folder in a `chore(generate):` commit",
+      "Re-running with the same input produces byte-identical output (test proves it)"
+    ],
+    "scope": "emitters/ts-angular-client.",
+    "blockedBy": [
+      "P1-03"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P1-05",
+    "title": "Emitter: NestJS DTOs and controller stubs from OpenAPI",
+    "goal": "Generate the server side of the same contract.",
+    "acceptance": [
+      "`emitters/nest-server` implements the Emitter contract",
+      "It generates DTO classes with class-validator decorators and an abstract controller per tag",
+      "A sample service that extends the abstract controller compiles",
+      "Deterministic output test, as for the Angular emitter"
+    ],
+    "scope": "emitters/nest-server.",
+    "blockedBy": [
+      "P1-03"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P1-06",
+    "title": "Local registry and versioning: Verdaccio plus Changesets",
+    "goal": "Publish emitted packages so products consume versions, not source.",
+    "acceptance": [
+      "`docker compose up registry` starts Verdaccio on localhost:4873",
+      "Changesets is configured; `pnpm factory release orders-api` versions and publishes `@factory/orders-api-angular` and `@factory/orders-api-nest`",
+      "A script installs the published package into a temp project to prove it resolves"
+    ],
+    "scope": "Root release config, docker-compose.yml, tools/.",
+    "blockedBy": [
+      "P1-04",
+      "P1-05"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P1-07",
+    "title": "Recipe: nestjs-service skeleton generator",
+    "goal": "One command creates a golden-path NestJS service.",
+    "acceptance": [
+      "`recipes/nestjs-service` generator creates a service with health endpoint, config validation, OpenTelemetry setup and a `src/ext/` folder",
+      "Generated service passes lint, test and build",
+      "Generator test snapshots the file tree"
+    ],
+    "scope": "recipes/nestjs-service.",
+    "blockedBy": [
+      "P1-01"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P1-08",
+    "title": "Recipe: angular-remote skeleton with Native Federation",
+    "goal": "One command creates a golden-path Angular remote.",
+    "acceptance": [
+      "`recipes/angular-remote` generator creates a standalone Angular remote exposed through Native Federation, with routing and a `src/ext/` folder",
+      "Generated remote passes lint, test and build",
+      "Generator test snapshots the file tree"
+    ],
+    "scope": "recipes/angular-remote.",
+    "blockedBy": [
+      "P1-01"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P1-09",
+    "title": "Assembly CLI: product.yaml to a working product",
+    "goal": "Connect manifest, resolver, recipe and emitters into one command.",
+    "acceptance": [
+      "`pnpm factory assemble products/orders-ui/product.yaml` resolves material versions from Verdaccio, runs the recipe and installs the emitted packages",
+      "Same for `products/orders-service/product.yaml` with the nestjs-service recipe",
+      "Both assembled products pass lint, test and build",
+      "Re-running assemble is idempotent"
+    ],
+    "scope": "tools/ and products/.",
+    "blockedBy": [
+      "P1-06",
+      "P1-07",
+      "P1-08"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P1-10",
+    "title": "Gate 1 demo: change the spec, regenerate both sides, contract test catches drift",
+    "goal": "Prove Gate 1: one product rebuilt entirely from its spec.",
+    "acceptance": [
+      "A contract test runs the Angular client against the NestJS service in CI",
+      "`scripts/gate1-demo.sh` adds a field to orders.tsp, releases, re-assembles both products and passes",
+      "The same script with a breaking change is stopped by oasdiff before release",
+      "PROGRESS.md records Gate 1 evidence and the planner opens a `Gate 1 review` issue for a human"
+    ],
+    "scope": "scripts/, products/, CI contract test job.",
+    "blockedBy": [
+      "P1-09"
+    ],
+    "labels": []
+  }
+]

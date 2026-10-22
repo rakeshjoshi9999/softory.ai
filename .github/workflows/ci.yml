@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      FIXER_URL: ${{ secrets.FIXER_URL }}
+      FIXER_TOKEN: ${{ secrets.FIXER_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        if: hashFiles('package.json') != ''
+        run: pnpm install --frozen-lockfile
+      - name: Lint, test, build (affected)
+        if: hashFiles('nx.json') != ''
+        run: pnpm nx affected -t lint test build --base=origin/main --parallel=3 2>&1 | tee ci.log
+        shell: bash
+
+      # Incident response: hand the failure to the Claude fixer scheduled task.
+      - name: Notify fixer
+        if: failure() && env.FIXER_URL != ''
+        shell: bash
+        run: |
+          TAIL=$(tail -n 80 ci.log 2>/dev/null || echo "no log captured")
+          TEXT=$(printf 'CI failed.\nRepo: %s\nBranch: %s\nCommit: %s\nRun: %s/%s/actions/runs/%s\n\nLog tail:\n%s' \
+            "$GITHUB_REPOSITORY" "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "$GITHUB_SHA" \
+            "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$TAIL")
+          jq -n --arg text "$TEXT" '{text: $text}' > payload.json
+          curl -sS -X POST "$FIXER_URL" \
+            -H "Authorization: Bearer $FIXER_TOKEN" \
+            -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "Content-Type: application/json" \
+            --data @payload.json

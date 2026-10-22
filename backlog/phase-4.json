@@ -1,0 +1,177 @@
+[
+  {
+    "id": "P4-01",
+    "title": "Legacy discovery scanner",
+    "goal": "Inventory an existing codebase read-only: the first deliverable of every transformation.",
+    "acceptance": [
+      "`pnpm factory discover <git-url-or-path>` clones read-only and outputs JSON listing services, frontends, frameworks and versions, HTTP endpoints, pipelines, Dockerfiles and dependencies",
+      "Detectors exist for Angular, React, NestJS, Express, Spring Boot and FastAPI, each with fixture repos in tests",
+      "Duplicated code hotspots are reported (jscpd or equivalent)",
+      "The scanner never writes to the scanned repo (test asserts no changes)"
+    ],
+    "scope": "tools/discover.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P4-02",
+    "title": "Factory Readiness score",
+    "goal": "One number and a checklist per repo that shows how far it is from the factory.",
+    "acceptance": [
+      "Scoring rules (documented in docs/readiness.md) cover: specs present, contract tests, generated vs hand-written code ratio, shared pipeline blocks, signed artifacts, SBOMs, test coverage",
+      "`pnpm factory readiness <repo>` outputs a 0–100 score with per-rule evidence, using discovery output",
+      "The control plane stores scores over time and `products/readiness-remote` shows the trend and the top fixes",
+      "Tests pin scores for three fixture repos"
+    ],
+    "scope": "tools/, control-plane-api, products/readiness-remote.",
+    "blockedBy": ["P4-01"],
+    "labels": []
+  },
+  {
+    "id": "P4-03",
+    "title": "Spec extraction: draft OpenAPI materials from existing services",
+    "goal": "Turn legacy APIs into materials without rewriting them.",
+    "acceptance": [
+      "For NestJS and Express fixtures, `pnpm factory extract-api <service>` produces an OpenAPI draft from routes, DTOs and validators (static analysis first, agent-assisted gaps marked TODO)",
+      "Output is created as a material in Draft state with a PR for human review",
+      "A contract test generated from the draft passes against the running fixture service"
+    ],
+    "scope": "tools/extract.",
+    "blockedBy": ["P4-01"],
+    "labels": []
+  },
+  {
+    "id": "P4-04",
+    "title": "Token extraction: draft design tokens from existing CSS",
+    "goal": "Start a legacy frontend's design system material from what it already uses.",
+    "acceptance": [
+      "`pnpm factory extract-tokens <app>` clusters colors, spacing, radii and font sizes from CSS/SCSS into W3C DTCG JSON",
+      "Near-duplicates are merged with a report of what was merged",
+      "Style Dictionary builds CSS variables from the draft; a fixture app renders the same before and after (visual test)"
+    ],
+    "scope": "tools/extract.",
+    "blockedBy": ["P4-01"],
+    "labels": []
+  },
+  {
+    "id": "P4-05",
+    "title": "Legacy recipe: wrap an existing app as a product",
+    "goal": "Give legacy apps the factory's gates without regenerating them.",
+    "acceptance": [
+      "`recipes/legacy` registers an existing repo as a product with a product.yaml that has no skeleton",
+      "It adds the shared Dagger blocks for SBOM, scan and signing to the app's pipeline",
+      "The app appears in the catalog and the material graph with its dependencies",
+      "Fixture legacy app goes from unregistered to signed image in one run"
+    ],
+    "scope": "recipes/legacy, pipelines/dagger.",
+    "blockedBy": ["P4-01"],
+    "labels": []
+  },
+  {
+    "id": "P4-06",
+    "title": "Contract the edges of a legacy system",
+    "goal": "Make legacy code safe to change before replacing it.",
+    "acceptance": [
+      "For each extracted API with known consumers, a contract test project is generated and runs in the legacy app's pipeline",
+      "A breaking change in the fixture legacy service is caught by the generated tests",
+      "The readiness score's contract-test rule picks the tests up"
+    ],
+    "scope": "tools/, recipes/legacy.",
+    "blockedBy": ["P4-03", "P4-05"],
+    "labels": []
+  },
+  {
+    "id": "P4-07",
+    "title": "Context packs as a material type",
+    "goal": "Versioned, tested context for coding agents, emitted from the factory's own sources.",
+    "acceptance": [
+      "Material type `context-pack` with an emitter that builds AGENTS.md, CLAUDE.md fragments and skill folders from: repo conventions, the component catalog, material specs and recipes",
+      "Context packs are versioned and released like other materials",
+      "promptfoo eval suite runs three fixture tasks with and without the pack and reports the difference",
+      "Eval runs nightly; a drop below the last release's score blocks the next pack release"
+    ],
+    "scope": "materials/, emitters/context-pack, evals/.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P4-08",
+    "title": "MCP server emitter from OpenAPI",
+    "goal": "Every API material becomes agent tools automatically.",
+    "acceptance": [
+      "`emitters/mcp-server` generates a TypeScript MCP server exposing one tool per OpenAPI operation, with schemas from the spec",
+      "Read-only operations and write operations are separated; write tools are off unless enabled in config",
+      "Generated server for orders-api passes an MCP protocol conformance test and calls the running orders-service"
+    ],
+    "scope": "emitters/mcp-server.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P4-09",
+    "title": "Derived-code lineage: record inputs behind every generated or agent-written change",
+    "goal": "The recall-for-derived-code capability: know which code came from which spec, emitter, rule or model.",
+    "acceptance": [
+      "Emitter runs and agent sessions write a signed lineage attestation per commit (git notes): material versions, emitter versions, context-pack version, model id, prompt hash",
+      "Claude Code hooks capture agent-session lineage; emitters capture codegen lineage",
+      "The graph service ingests lineage and links files to inputs",
+      "`pnpm factory lineage --input context-pack@1.2.0` lists every file and product derived from that input"
+    ],
+    "scope": "tools/, emitters/, products/graph-service, .claude hooks (needs-human).",
+    "blockedBy": ["P4-07"],
+    "labels": ["needs-human"]
+  },
+  {
+    "id": "P4-10",
+    "title": "Recall workflow in the control plane",
+    "goal": "Flow C end to end: mark an input bad and drive exposure to zero.",
+    "acceptance": [
+      "Temporal workflow `recall` takes any input (material version, emitter version, context-pack version), finds affected code via lineage and the graph, and opens regenerate or fix PRs",
+      "`products/recalls-remote` shows open recalls with remaining exposure per product, falling to zero as PRs merge",
+      "Kyverno blocks deploys of recalled images during the recall",
+      "End-to-end test: recall a fixture emitter version and watch exposure reach zero"
+    ],
+    "scope": "products/run-orchestrator, products/recalls-remote, deploy policies.",
+    "blockedBy": ["P4-09"],
+    "labels": []
+  },
+  {
+    "id": "P4-11",
+    "title": "Model gateway integration for the AI workforce",
+    "goal": "Route agent tasks to models by cost and quality.",
+    "acceptance": [
+      "The agent runner calls models through a configurable gateway (Frugal Layer or any OpenAI-compatible router)",
+      "Routing rules by task type are configured as a material",
+      "Per-team token cost is reported to the control plane insights"
+    ],
+    "scope": "AI workforce config, control-plane-api insights.",
+    "blockedBy": ["P4-07"],
+    "labels": ["needs-human"]
+  },
+  {
+    "id": "P4-12",
+    "title": "Transformation report generator",
+    "goal": "The customer-facing output of a discovery engagement.",
+    "acceptance": [
+      "`pnpm factory report <org>` produces an HTML report: inventory, readiness scores, duplication hotspots, extracted materials, recommended first products and a 90-day plan",
+      "Report renders from fixture data with no network access",
+      "Snapshot test of the report structure"
+    ],
+    "scope": "tools/report.",
+    "blockedBy": ["P4-02", "P4-03", "P4-04"],
+    "labels": []
+  },
+  {
+    "id": "P4-13",
+    "title": "Gate 4 package: pilot playbook",
+    "goal": "Everything needed to run a paid transformation pilot.",
+    "acceptance": [
+      "docs/pilot-playbook.md: scope, week-by-week plan, success metrics (readiness score delta, lead time, change failure rate), and exit report template",
+      "A full dry run on an open-source legacy app (chosen and recorded in DECISIONS.md) produces discovery, readiness, extracted materials, a wrapped product and a report",
+      "PROGRESS.md records the evidence and the planner opens `Gate 4 review` for a human"
+    ],
+    "scope": "docs/, scripts/.",
+    "blockedBy": ["P4-06", "P4-10", "P4-12"],
+    "labels": []
+  }
+]

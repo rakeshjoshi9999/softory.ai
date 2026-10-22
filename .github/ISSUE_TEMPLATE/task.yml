@@ -1,0 +1,44 @@
+name: Factory task
+description: One unit of work small enough for a single builder run
+labels: ["ready"]
+body:
+  - type: input
+    id: task-id
+    attributes:
+      label: Task ID
+      description: "Next free ID in the phase, e.g. P2-13. Also prefix the issue title with [P2-13]."
+    validations:
+      required: true
+  - type: input
+    id: phase
+    attributes:
+      label: Phase
+      description: Roadmap phase (1 Foundations, 2 Supply chain, 3 Control plane MVP, 4 AI and legacy)
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: One or two sentences on what this delivers and why.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Each line must be checkable with a command and its output.
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope / out of scope
+      description: Folders this task may touch, and what it must not change.
+  - type: input
+    id: blocked
+    attributes:
+      label: Blocked by
+      description: "Task IDs, e.g. P2-04, P2-05 (leave empty if none)"
