@@ -1,0 +1,11 @@
+{
+  "name": "recipe-nestjs-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "recipes/nestjs-service/src",
+  "projectType": "library",
+  "tags": ["type:recipe", "scope:factory"],
+  "targets": {
+    "build": { "executor": "nx:run-commands", "outputs": ["{workspaceRoot}/dist/recipes/nestjs-service"], "options": { "command": "tsc -p recipes/nestjs-service/tsconfig.lib.json", "cwd": "{workspaceRoot}" } },
+    "test": { "executor": "nx:run-commands", "options": { "command": "vitest run --root . recipes/nestjs-service", "cwd": "{workspaceRoot}" } }
+  }
+}

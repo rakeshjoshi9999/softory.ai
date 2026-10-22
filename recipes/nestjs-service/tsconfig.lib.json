@@ -1,0 +1,1 @@
+{ "extends": "../../tsconfig.base.json", "compilerOptions": { "outDir": "../../dist/recipes/nestjs-service", "rootDir": "src" }, "include": ["src/**/*.ts"], "exclude": ["src/**/*.spec.ts"] }
