@@ -22,3 +22,4 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-22 · New dev dep (open source): orval ^7 (MIT) · generates the Angular HttpClient client in ts-angular-client · #4
 - 2026-10-22 · Emitter writes orval output to a temp dir then replaces `generated/angular-client/`; orval `prettier: false`, custom header, tags-split · deterministic, no dependence on local prettier config · #4
 - 2026-10-22 · Executor `@factory/ts-angular-client:emit` resolved through tsconfig.base paths; the orders-api target `emit-angular-client` is the only change outside the emitter · #4
+- 2026-10-22 · Emitter contract types (MaterialBundle, EmitOptions, EmittedPackage) live minimally in emitters/ts-angular-client until a second emitter needs a shared package; emitted client inlines DeepNonNullable instead of importing @orval/core (post-processed, throws if any @orval/ import remains) · products must not depend on emitter tooling · #4
