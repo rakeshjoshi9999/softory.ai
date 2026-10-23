@@ -2,5 +2,6 @@ packages:
   - "materials/*"
   - "emitters/*"
   - "recipes/*"
+  - "materials/*/packages/*"
   - "products/*"
   - "tools/*"

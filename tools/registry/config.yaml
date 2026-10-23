@@ -1,0 +1,15 @@
+# Local Verdaccio registry for factory packages. Anonymous access is for local dev only.
+storage: /verdaccio/storage
+listen: 0.0.0.0:4873
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org/
+packages:
+  '@factory/*':
+    access: $all
+    publish: $all
+    unpublish: $all
+  '**':
+    access: $all
+    proxy: npmjs
+log: { type: stdout, format: pretty, level: warn }

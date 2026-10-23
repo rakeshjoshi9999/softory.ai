@@ -1,0 +1,10 @@
+services:
+  registry:
+    image: verdaccio/verdaccio:6
+    ports:
+      - "4873:4873"
+    volumes:
+      - ./tools/registry/config.yaml:/verdaccio/conf/config.yaml:ro
+      - registry-storage:/verdaccio/storage
+volumes:
+  registry-storage:

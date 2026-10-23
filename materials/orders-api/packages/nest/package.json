@@ -1,0 +1,10 @@
+{
+  "name": "@factory/orders-api-nest",
+  "version": "1.0.1",
+  "license": "MIT",
+  "description": "NestJS DTOs and controller stubs for orders-api (emitted by nest-server)",
+  "files": ["src"],
+  "exports": { ".": "./src/index.ts" },
+  "peerDependencies": { "@nestjs/common": "^11", "class-transformer": "^0.5", "class-validator": "^0.15", "reflect-metadata": "^0.2" },
+  "publishConfig": { "registry": "http://localhost:4873/" }
+}

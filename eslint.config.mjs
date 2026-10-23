@@ -3,7 +3,7 @@ import tseslint from 'typescript-eslint';
 
 export default [
   ...tseslint.configs.recommended,
-  { ignores: ['**/dist', '**/generated', '**/node_modules'] },
+  { ignores: ['**/dist', '**/generated', 'materials/*/packages/*/src', '**/node_modules'] },
   {
     files: ['**/*.ts'],
     plugins: { '@nx': nx },
