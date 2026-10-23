@@ -45,3 +45,4 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - 2026-10-22 · PR #54 (#5 P1-05) · builder fixed review: emitter escapes docs/strings, validates identifiers, numeric constraints and patterns at emit time; hostile-spec tests added · https://github.com/rakeshjoshi9999/softory.ai/pull/54
 - 2026-10-22 · #7 P1-07 · nestjs-service recipe generator (health, config validation, OTel, src/ext/), file-tree snapshot + lint/tsc/test of a generated service, `nx affected -t lint test build` green · branch claude/gifted-mendel-3vbpuj
 - 2026-10-23 · no ready issues · #6 blocked by P1-04/P1-05, #9 by P1-06, #10 by P1-09; waiting on PRs #53/#54/#55
+- 2026-10-23 · no ready issues · all open Phase 2 issues chain back to #11 P2-01, which is blocked (draft PR #62 needs a human: ci.yml switch + engine run); PR #62 is mergeable, nothing to sync
