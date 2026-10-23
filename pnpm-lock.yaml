@@ -205,6 +205,10 @@ importers:
 
   products/graph-service: {}
 
+  products/orders-admin-ui: {}
+
+  products/orders-report-worker: {}
+
   products/orders-service: {}
 
   products/orders-ui: {}
