@@ -13,7 +13,9 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - #4, #5, #7 — PRs #53, #54, #55 awaiting review/merge
 
 ## Next up
-- #5 P1-05 nest-server emitter (same pattern as `emitters/ts-angular-client`).
+- #4 P1-04 ts-angular-client emitter is in review (PR #53).
+- #5 P1-05 nest-server emitter is in review (PR #54).
+- #6 P1-06 Verdaccio + Changesets.
 
 ## Resume notes
 <!-- The builder keeps one entry per in-progress issue: done so far, next step, open problems.
@@ -32,4 +34,6 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - 2026-10-22 · #4 P1-04 · ts-angular-client emitter, 3 tests, `nx affected -t lint test build` green (14 tasks) · branch claude/gifted-mendel-7ez63z
 - 2026-10-22 · #4 P1-04 · builder fixed PR #53 review (two-arg Emitter contract, no @orval import in output); pushed to session branch claude/gifted-mendel-tc2z2n, not PR head claude/gifted-mendel-7ez63z · https://github.com/rakeshjoshi9999/softory.ai/pull/53
 - 2026-10-22 · #8 P1-08 · angular-remote recipe: generator + file-tree snapshot; generated remote passes eslint, ngc, vitest; `nx affected -t lint test build` green (14 tasks) · branch claude/gifted-mendel-x7cms9
+- 2026-10-22 · #5 P1-05 · nest-server emitter (DTOs + abstract controller per tag), 6 tests, `nx affected -t lint test build` green · branch claude/gifted-mendel-ar9dmc · PR opened
+- 2026-10-22 · PR #54 (#5 P1-05) · builder fixed review: emitter escapes docs/strings, validates identifiers, numeric constraints and patterns at emit time; hostile-spec tests added · https://github.com/rakeshjoshi9999/softory.ai/pull/54
 - 2026-10-23 · no ready issues · #6 blocked by P1-04/P1-05, #9 by P1-06, #10 by P1-09; waiting on PRs #53/#54/#55

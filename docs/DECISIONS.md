@@ -19,6 +19,12 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-22 · "Last released spec" is a committed snapshot at `materials/<name>/released/openapi.yaml` until the registry lands (P1-06) · oasdiff needs a base and nothing is published yet · #3
 - 2026-10-22 · `generated/openapi.yaml` is committed (in a `chore(generate):` commit); the material's test regenerates it and fails if it is stale · downstream emitters and reviewers read it without running TypeSpec · #3
 - 2026-10-22 · Material checks run as Vitest in the `test` target so CI's `nx affected -t lint test build` covers them; `emit-openapi`, `lint-openapi`, `breaking`, `validate` also exist as standalone targets · #3
+- 2026-10-22 · New dev deps (open source): @nestjs/{common,core} ^11 (MIT), class-validator, class-transformer (MIT), reflect-metadata (Apache-2.0), rxjs (Apache-2.0) · generated DTOs/controllers target them; compile-checked in the emitter test · #5
+- 2026-10-22 · Abstract controller has concrete `<op>Route` methods carrying the Nest route/param decorators that delegate to `abstract <op>` methods · decorators on an overridden method are not inherited, so implementers only override the abstract ones and keep routing intact · #5
+- 2026-10-22 · Emitter contract types are duplicated in nest-server (as in ts-angular-client, PR #53) until a shared package is justified · avoids cross-emitter dependency before the contract is settled · #5
+- 2026-10-22 · readOnly OpenAPI properties become `@IsOptional()` in DTOs · server-assigned fields (id, status) must not be required on input · #5
+- 2026-10-22 · Sample-service compile test runs the TS compiler on a fixture copied next to freshly emitted code (under node_modules/.cache) · keeps the fixture out of the Nx module-boundary graph · #5
+- 2026-10-22 · nest-server emitter fails the emit (throws) on non-identifier names, non-numeric constraints and uncompilable patterns; escapes comment terminators and quotes · spec text is untrusted input to generated code · #5
 - 2026-10-22 · New dev dep (open source): orval ^7 (MIT) · generates the Angular HttpClient client in ts-angular-client · #4
 - 2026-10-22 · Emitter writes orval output to a temp dir then replaces `generated/angular-client/`; orval `prettier: false`, custom header, tags-split · deterministic, no dependence on local prettier config · #4
 - 2026-10-22 · Executor `@factory/ts-angular-client:emit` resolved through tsconfig.base paths; the orders-api target `emit-angular-client` is the only change outside the emitter · #4

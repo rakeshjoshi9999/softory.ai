@@ -1,0 +1,26 @@
+import { Controller } from '@nestjs/common';
+import { OrderDto, OrderPageDto, OrdersControllerBase } from './index.js';
+import type { ListOrdersQuery } from './index.js';
+
+/** Sample service: hand-written code extending the generated abstract controller. */
+@Controller()
+export class OrdersController extends OrdersControllerBase {
+  private readonly orders: OrderDto[] = [];
+
+  listOrders(query: ListOrdersQuery): OrderPageDto {
+    const page = new OrderPageDto();
+    page.items = this.orders.slice(0, query.limit ?? 20);
+    return page;
+  }
+
+  createOrder(body: OrderDto): OrderDto {
+    this.orders.push(body);
+    return body;
+  }
+
+  getOrder(id: string): OrderDto {
+    const found = this.orders.find((o) => o.id === id);
+    if (!found) throw new Error(`order ${id} not found`);
+    return found;
+  }
+}
