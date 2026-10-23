@@ -68,3 +68,5 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-23 · Helm: one library chart (`factory-lib`) owns probes, resources and the restricted security context; per-kind thin charts and recipe-generated `products/<name>/chart/` only include a lib template · one place to harden every workload · #19
 - 2026-10-23 · Chart checks without helm: vitest asserts the structure; real `helm lint` + `kubeconform` run via `scripts/chart-check.sh` once CI installs them · no helm in sandbox, workflows off-limits · #19
 
+- 2026-10-23 · `factory graph sync` posts every `products/*/product.lock.json` to `POST /ingest/lockfile` (URL from FACTORY_GRAPH_URL, default http://localhost:3000), build id = short git SHA · lockfiles are the source of truth for what a product consumes; re-runs for the same build are idempotent · #15
+- 2026-10-23 · Product contract tests (src/ext/orders-contract.spec.ts) assert the pinned orders-api version is inside the `consumes` range and equals the version orders-service pins · CI has no registry and products must not import emitter/material output, so wire-level checks stay in the orders-api material test · #15

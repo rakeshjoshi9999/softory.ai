@@ -16,6 +16,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P2-03 provenance statements (merged, PR #64)
 
 ## In progress
+- #15 P2-05 two more products + `factory graph sync`: PR open, awaiting review
 - #13 P2-03 provenance statements: merged (PR #64)
 - #14 P2-04 material graph service: PR #65 open, awaiting review
 - #19 P2-09 container images + Helm library chart: merged (PR #66)
@@ -33,6 +34,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
+- #15 P2-05: the contract tests compare lockfile pins with orders-service (products cannot import emitter output or the registry in CI), not live HTTP. Also graph-service's built output cannot find `migrations/` (`../../migrations` from `dist/products/graph-service/ext`), so it only runs from a symlinked layout: follow-up issue wanted? `factory release` also crashed on a fresh checkout creating `dist/attestations/@factory/<pkg>/<ver>` (npm pack ENOENT, after publishing).
 - #14 P2-04: no Docker here, so tests start a throwaway local PostgreSQL via initdb (or use `TEST_DATABASE_URL`, e.g. the new `postgres` compose service). CI (workflow off-limits) needs a postgres service + `TEST_DATABASE_URL`, or the runner's preinstalled PostgreSQL works as-is. Also the graph API is hand-written in `src/ext/`, not yet a TypeSpec material: follow-up issue wanted?
 - #19 P2-09: `helm lint` / `kubeconform` are not in CI: add a step running `scripts/chart-check.sh` (needs helm + kubeconform installed; `.github/workflows/` is off-limits). Neither helm nor a Docker daemon exist here, so charts are only structurally tested (YAML parse + required probes/resources/securityContext) and the Dagger `image`/`signedImage` functions are untested against the engine.
 - #12 P2-02: Verdaccio cannot serve extra files, so `.sig` / `.sbom.spdx.json` go to a filesystem attestation store (`FACTORY_ATTESTATION_STORE`, default `dist/attestations/<pkg>/<version>/`), not literally into the registry. OK for now, or add a small sidecar/registry plugin later? Also `release` now requires `FACTORY_SIGNING_KEY`; `sbom`/`sign` Dagger functions are untested against the engine (no Docker daemon); release itself uses an in-process SPDX generator and Node signing (cosign-verify-blob compatible).
@@ -42,6 +44,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-23 · #15 P2-05 · products orders-admin-ui + orders-report-worker assembled from product.yaml (orders-api@^1 -> 1.0.1), contract tests vs orders-service, `factory graph sync` (3 tests); ran it against a real graph-service + PostgreSQL: 4 products ingested; `nx affected -t lint test build` green · branch claude/15-two-more-products
 - 2026-10-23 · #14 P2-04 · products/graph-service assembled with nestjs-service recipe; migrations 001, GraphStore, ingest/provenance + ingest/lockfile + consumers endpoint; 5 integration tests on real PostgreSQL (throwaway local cluster, or TEST_DATABASE_URL); `nx affected -t lint test build` green · branch claude/gifted-mendel-q9urx7
 - 2026-10-23 · #13 P2-03 · provenance.ts (in-toto v1 + SLSA v1 statement, signed with package key, schema + 3 tests), `release` writes it, `factory provenance <pkg>@<ver>`; `nx affected -t lint test build` green · branch claude/gifted-mendel-9ehw2q
 - 2026-10-23 · #12 P2-02 · attest.ts (SPDX SBOM, ECDSA P-256 sign/verify), `factory release` writes .sbom/.sig, `factory verify`, Dagger sbom/sign + argv tests, tamper test; `nx affected -t lint test build` green · branch claude/gifted-mendel-9l0s2i
