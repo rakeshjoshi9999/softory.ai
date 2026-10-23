@@ -55,8 +55,9 @@ export async function recall(ref: string, opts: RecallOptions): Promise<RecallRe
   if (!set.ok) throw new Error(`graph service answered ${set.status} for ${material}@${version}: ${await set.text()}`);
   const consumersRes = await f(`${base}/consumers`);
   if (!consumersRes.ok) throw new Error(`graph service answered ${consumersRes.status} listing consumers`);
-  const consumers = (await consumersRes.json()) as { product: string }[];
-  const products = [...new Set(consumers.map((c) => c.product))].sort();
+  const consumers = (await consumersRes.json()) as { product: string; package: string }[];
+  // the graph lists consumers of every package of the material version; only this package's are affected
+  const products = [...new Set(consumers.filter((c) => c.package === `${pkg}@${version}`).map((c) => c.product))].sort();
 
   (opts.deprecate ?? npmDeprecate)(`${pkg}@${version}`, `${RECALL_PREFIX}${opts.reason}`, registry);
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { issuePayload, parsePackageRef, recall } from './recall.js';
 
-function fakeFetch(consumers: { product: string }[], opts: { graphStatus?: number } = {}) {
+function fakeFetch(consumers: { product: string; package: string }[], opts: { graphStatus?: number } = {}) {
   const calls: { url: string; method: string; body?: unknown }[] = [];
   const impl = (async (url: string, init?: RequestInit) => {
     calls.push({ url, method: init?.method ?? 'GET', body: init?.body ? JSON.parse(init.body as string) : undefined });
@@ -12,7 +12,8 @@ function fakeFetch(consumers: { product: string }[], opts: { graphStatus?: numbe
   return { impl, calls };
 }
 
-const consumers = [{ product: 'orders-ui' }, { product: 'orders-ui' }, { product: 'orders-admin-ui' }];
+const ang = '@factory/orders-api-angular@1.0.1';
+const consumers = [{ product: 'orders-ui', package: ang }, { product: 'orders-ui', package: ang }, { product: 'orders-admin-ui', package: ang }];
 
 describe('recall', () => {
   it('parses package refs', () => {
@@ -40,6 +41,14 @@ describe('recall', () => {
     expect(posts.map((p) => p.body)).toEqual(r.issues.map((i) => i.payload));
     expect(posts[0]!.body).toEqual(issuePayload('orders-admin-ui', '@factory/orders-api-angular', '1.0.1', 'wrong totals'));
     expect((posts[0]!.body as { labels: string[] }).labels).toEqual(['recall']);
+  });
+
+  it('ignores consumers of the material version\'s other packages', async () => {
+    const mixed = [...consumers, { product: 'orders-service', package: '@factory/orders-api-nest@1.0.1' }, { product: 'orders-report-worker', package: '@factory/orders-api-nest@1.0.1' }];
+    const { impl, calls } = fakeFetch(mixed);
+    const r = await recall('@factory/orders-api-angular@1.0.1', { reason: 'x', graphUrl: 'http://graph', repo: 'o/r', token: 't', fetchImpl: impl, deprecate: () => undefined });
+    expect(r.products).toEqual(['orders-admin-ui', 'orders-ui']);
+    expect(calls.filter((c) => c.url.includes('api.github.com'))).toHaveLength(2);
   });
 
   it('opens no issues when nobody consumes the version, and needs no token then', async () => {
