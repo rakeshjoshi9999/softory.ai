@@ -1,0 +1,29 @@
+{
+  "name": "graph-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "products/graph-service/src",
+  "projectType": "application",
+  "tags": [
+    "type:product",
+    "scope:factory"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/dist/products/graph-service"
+      ],
+      "options": {
+        "command": "tsc -p products/graph-service/tsconfig.app.json",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run --root . products/graph-service",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}
