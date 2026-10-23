@@ -1,0 +1,67 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { classify, impact, renderMarkdown, type ImpactDeps } from './impact.js';
+
+let root: string;
+const PRODUCTS = ['orders-admin-ui', 'orders-service', 'orders-ui'];
+
+const put = (rel: string, content: string) => {
+  mkdirSync(dirname(join(root, rel)), { recursive: true });
+  writeFileSync(join(root, rel), content);
+};
+
+beforeAll(() => {
+  root = mkdtempSync(join(tmpdir(), 'impact-'));
+  put('materials/orders-api/material.yaml', 'metadata:\n  name: orders-api\n  version: 1.0.1\n');
+  put('materials/orders-api/released/openapi.yaml', 'a');
+  put('materials/orders-api/generated/openapi.yaml', 'b');
+  for (const p of PRODUCTS) {
+    put(`products/${p}/product.yaml`, `apiVersion: factory/v1\nkind: Product\nmetadata:\n  name: ${p}\n  owner: t\nspec:\n  recipe: nestjs-service@1\n  consumes:\n    api: orders-api@^1\n`);
+    put(`products/${p}/product.lock.json`, JSON.stringify({ packages: { '@factory/orders-api-nest': '1.0.1' } }));
+  }
+});
+
+const deps = (breaking: unknown[], changelog: unknown[], graph: string[] | null = PRODUCTS): ImpactDeps => ({
+  oasdiff: (args) => JSON.stringify(args[0] === 'breaking' ? breaking : changelog),
+  graphConsumers: async () => graph,
+  dryAssemble: async () => ({ ok: true, detail: 'would write 0 file(s)' }),
+  runTests: () => ({ ok: true, detail: 'contract tests passed' }),
+});
+
+describe('classify', () => {
+  it('no differences is a patch', () => expect(classify(deps([], []), 'a', 'b')).toEqual({ change: 'patch', findings: [] }));
+  it('a non-breaking change is minor', () => expect(classify(deps([], [{ level: 1, text: 'added field' }]), 'a', 'b').change).toBe('minor'));
+  it('an error-level change is breaking', () => expect(classify(deps([{ level: 3, text: 'removed currency' }], []), 'a', 'b').change).toBe('breaking'));
+});
+
+describe('impact', () => {
+  it('patch change: all consumers accept it and nothing fails', async () => {
+    const r = await impact('materials/orders-api', { root, deps: deps([], []) });
+    expect(r).toMatchObject({ change: 'patch', next: '1.0.2', ok: true });
+    expect(r.products.map((p) => p.product)).toEqual(PRODUCTS);
+    expect(r.products.every((p) => p.via === 'graph' && p.rangeAccepts)).toBe(true);
+    expect(renderMarkdown(r)).toContain('no consumer breaks');
+  });
+
+  it('breaking change lists all three consumers and fails', async () => {
+    const r = await impact('materials/orders-api', { root, deps: deps([{ level: 3, text: 'removed currency' }], []) });
+    expect(r).toMatchObject({ change: 'breaking', next: '2.0.0', ok: false });
+    expect(r.products.map((p) => p.product)).toEqual(PRODUCTS);
+    expect(r.products.every((p) => !p.rangeAccepts)).toBe(true);
+    const md = renderMarkdown(r);
+    for (const p of PRODUCTS) expect(md).toContain(`| ${p} |`);
+    expect(md).toContain('removed currency');
+  });
+
+  it('falls back to lockfiles when the graph is unreachable', async () => {
+    const r = await impact('materials/orders-api', { root, deps: deps([], [], null) });
+    expect(r.products.map((p) => [p.product, p.via])).toEqual(PRODUCTS.map((p) => [p, 'lockfile']));
+  });
+
+  it('reports a failing consumer test', async () => {
+    const d = { ...deps([], []), runTests: () => ({ ok: false, detail: 'boom' }) };
+    expect((await impact('materials/orders-api', { root, deps: d })).ok).toBe(false);
+  });
+});

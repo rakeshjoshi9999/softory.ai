@@ -22,6 +22,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - #19 P2-09 container images + Helm library chart: merged (PR #66)
 - #20 P2-10 GitOps on kind: draft PR #67 (needs-human), blocked on cluster run and CI job
 
+- #16 P2-06 impact analysis: draft PR (needs-human: CI workflow)
+
 ## Next up
 - Gate 1 review: a human closes the gate after P1-10 merges; then Phase 2 issues (`planned`) become `ready`.
 
@@ -35,6 +37,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
+- #16 P2-06: the sandbox denied writing `.github/workflows/`. The PR-comment job is at `tools/factory/ci/impact.yml`: copy it to `.github/workflows/impact.yml`. Also: the dry-run assembly needs a registry; when it is unreachable (CI) that check is reported as skipped, only the range check and contract tests run. Consumers come from the graph service (FACTORY_GRAPH_URL), else lockfiles.
 - #15 P2-05: the contract tests compare lockfile pins with orders-service (products cannot import emitter output or the registry in CI), not live HTTP. Also graph-service's built output cannot find `migrations/` (`../../migrations` from `dist/products/graph-service/ext`), so it only runs from a symlinked layout: follow-up issue wanted? `factory release` also crashed on a fresh checkout creating `dist/attestations/@factory/<pkg>/<ver>` (npm pack ENOENT, after publishing).
 - #14 P2-04: no Docker here, so tests start a throwaway local PostgreSQL via initdb (or use `TEST_DATABASE_URL`, e.g. the new `postgres` compose service). CI (workflow off-limits) needs a postgres service + `TEST_DATABASE_URL`, or the runner's preinstalled PostgreSQL works as-is. Also the graph API is hand-written in `src/ext/`, not yet a TypeSpec material: follow-up issue wanted?
 - #20 P2-10: (1) CI job for the kind end-to-end run is not added (`.github/workflows/` off-limits): run `scripts/platform-up.sh && scripts/platform-test.sh` on a runner with docker, kind, kubectl and cosign. (2) No Docker daemon here, so the scripts were only syntax-checked (`bash -n`) and the manifests structurally tested; never run on a real cluster. (3) The ApplicationSet watches `products/*/chart` (what the recipes emit), not `products/*/deploy` as the issue words it, and no product has a committed `chart/` yet.
@@ -68,3 +71,4 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - 2026-10-23 · #19 P2-09 · Dagger `image`/`signedImage` (nginx-unprivileged / distroless Node, cosign by digest), deploy/charts/{factory-lib,nestjs-service,angular-remote}, recipes emit `chart/`, scripts/chart-check.sh; `nx affected -t lint test build` green; helm/kubeconform not run (not installed) · branch claude/gifted-mendel-ktn2pj
 - 2026-10-23 · PR #65 (#14 P2-04) · builder synced branch with main (merge, PROGRESS/DECISIONS conflicts kept both sides); `nx affected -t lint test build` green (35 tasks); sync used the run · branch claude/gifted-mendel-q9urx7
 - 2026-10-23 · #20 P2-10 · deploy/platform (kind config, Argo CD ApplicationSet, Kyverno require-signed-images), scripts/platform-up.sh + platform-test.sh, 5 structural tests; cluster run and CI job blocked · branch claude/20-gitops-kind
+- 2026-10-23 · #16 P2-06 · `factory impact <material-dir> [--json]` (oasdiff classify, graph/lockfile consumers, dry-run assemble, contract tests, Markdown+JSON), 7 tests; workflow blocked, provided at tools/factory/ci/impact.yml · branch claude/16-impact-analysis

@@ -112,7 +112,7 @@ export interface AssembleResult {
   installed: string[];
 }
 
-export async function assemble(manifestPath: string, opts: { root?: string; registry?: string } = {}): Promise<AssembleResult> {
+export async function assemble(manifestPath: string, opts: { root?: string; registry?: string; dryRun?: boolean } = {}): Promise<AssembleResult> {
   const root = opts.root ?? '.';
   const registry = opts.registry ?? process.env['FACTORY_REGISTRY'] ?? DEFAULT_REGISTRY;
   const manifest = readManifest(manifestPath);
@@ -129,6 +129,11 @@ export async function assemble(manifestPath: string, opts: { root?: string; regi
   for (const [path, content] of files) {
     const rel = path.slice(relDir.length + 1);
     const abs = resolve(root, path);
+    if (opts.dryRun) {
+      if (existsSync(abs) && (isHandWritten(path) || readFileSync(abs, 'utf8') === content)) unchanged++;
+      else written.push(rel);
+      continue;
+    }
     if (existsSync(abs) && (isHandWritten(path) || readFileSync(abs, 'utf8') === content)) {
       unchanged++;
       continue;
@@ -140,6 +145,10 @@ export async function assemble(manifestPath: string, opts: { root?: string; regi
 
   const lock = `${JSON.stringify({ registry, packages: Object.fromEntries(resolved.map((r) => [r.name, r.version])) }, null, 2)}\n`;
   const lockPath = join(productDir, 'product.lock.json');
+  if (opts.dryRun) {
+    if (!existsSync(lockPath) || readFileSync(lockPath, 'utf8') !== lock) written.push('product.lock.json');
+    return { product: name, written, unchanged, installed: resolved.map((r) => `${r.name}@${r.version}`) };
+  }
   if (!existsSync(lockPath) || readFileSync(lockPath, 'utf8') !== lock) {
     writeFileSync(lockPath, lock);
     written.push('product.lock.json');
