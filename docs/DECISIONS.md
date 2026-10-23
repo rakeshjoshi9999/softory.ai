@@ -58,3 +58,7 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-23 · New images (open source) pinned in the Dagger module: anchore/syft v1.18.1 (Apache-2.0), sigstore cosign v2.4.1 (Apache-2.0) · #12
 - 2026-10-23 · Provenance is an in-toto Statement v1 with a SLSA provenance v1 predicate, stored beside the SBOM as `<tarball>.provenance.json` with a detached `.sig` over the exact file bytes (same key/format as the package signature); subjects are the tarball plus every file in the package · lets impact analysis and recalls find inputs per package; no new dependencies (ajv already present) · #13
 - 2026-10-23 · Emitter version is read from `emitters/<id>/package.json` and the source commit from `git rev-parse HEAD` at release time · no extra metadata files · #13
+- 2026-10-23 · Images: `nginxinc/nginx-unprivileged:1.27-alpine` (BSD-2) for remotes, `gcr.io/distroless/nodejs22-debian12:nonroot` (Apache-2.0) for services; built from the Nx output copied onto the runtime base, signed with cosign by digest only · non-root, minimal, tamper-evident · #19
+- 2026-10-23 · Helm: one library chart (`factory-lib`) owns probes, resources and the restricted security context; per-kind thin charts and recipe-generated `products/<name>/chart/` only include a lib template · one place to harden every workload · #19
+- 2026-10-23 · Chart checks without helm: vitest asserts the structure; real `helm lint` + `kubeconform` run via `scripts/chart-check.sh` once CI installs them · no helm in sandbox, workflows off-limits · #19
+
