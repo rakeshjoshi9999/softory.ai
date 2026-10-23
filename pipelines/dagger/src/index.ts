@@ -1,5 +1,5 @@
 import { dag, Container, Directory, File, Secret, func, object } from '@dagger.io/dagger';
-import { blockCommand, ciCommands, sbomCommand, signCommand } from './plan.js';
+import { blockCommand, ciCommands, imageSpec, productBuildCommand, sbomCommand, signCommand, signImageCommand } from './plan.js';
 
 const NODE_IMAGE = 'node:22-bookworm';
 const SYFT_IMAGE = 'anchore/syft:v1.18.1';
@@ -69,5 +69,34 @@ export class Factory {
       .withWorkdir('/in')
       .withExec(signCommand(name), { redirectStdout: '/out/package.sig' })
       .file('/out/package.sig');
+  }
+
+  /** OCI image of one product: built with Nx, copied onto the kind's runtime base (non-root). */
+  @func()
+  image(src: Directory, product: string, kind: string): Container {
+    const spec = imageSpec(kind);
+    const out = this.workspace(src)
+      .withExec(productBuildCommand(product))
+      .directory(`/work/products/${product}/${spec.outDir}`);
+    const ctr = dag
+      .container()
+      .from(spec.base)
+      .withDirectory(spec.dest, out, { owner: spec.user })
+      .withUser(spec.user)
+      .withExposedPort(spec.port);
+    return spec.entrypoint.length > 0 ? ctr.withEntrypoint(spec.entrypoint) : ctr;
+  }
+
+  /** Publish the image, then sign the pushed digest with cosign (key from a secret). Returns the digest reference. */
+  @func()
+  async signedImage(src: Directory, product: string, kind: string, address: string, key: Secret): Promise<string> {
+    const ref = await this.image(src, product, kind).publish(address);
+    await dag
+      .container()
+      .from(COSIGN_IMAGE)
+      .withSecretVariable('COSIGN_KEY', key)
+      .withExec(signImageCommand(ref))
+      .sync();
+    return ref;
   }
 }

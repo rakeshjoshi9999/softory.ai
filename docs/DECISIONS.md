@@ -64,3 +64,7 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-23 · Controllers use explicit `@Inject(Token)` · vitest/esbuild emits no decorator metadata · #14
 - 2026-10-23 · Graph API endpoints are hand-written in `src/ext/` and not yet described by a TypeSpec material · keeps this issue to the service; contract can follow · #14
 - 2026-10-23 · consumers() filters packages by exact `@factory/<material>-(nest|angular)@<version>` instead of a LIKE pattern · `orders` vs `orders-api` prefix collision found in review · #14
+- 2026-10-23 · Images: `nginxinc/nginx-unprivileged:1.27-alpine` (BSD-2) for remotes, `gcr.io/distroless/nodejs22-debian12:nonroot` (Apache-2.0) for services; built from the Nx output copied onto the runtime base, signed with cosign by digest only · non-root, minimal, tamper-evident · #19
+- 2026-10-23 · Helm: one library chart (`factory-lib`) owns probes, resources and the restricted security context; per-kind thin charts and recipe-generated `products/<name>/chart/` only include a lib template · one place to harden every workload · #19
+- 2026-10-23 · Chart checks without helm: vitest asserts the structure; real `helm lint` + `kubeconform` run via `scripts/chart-check.sh` once CI installs them · no helm in sandbox, workflows off-limits · #19
+

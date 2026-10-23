@@ -7,3 +7,7 @@ graph.json
 
 # staged emitter output for release (see tools/factory/src/release.ts)
 materials/*/packages/*/src
+
+# helm dependency build output
+deploy/charts/*/charts
+deploy/charts/*/Chart.lock

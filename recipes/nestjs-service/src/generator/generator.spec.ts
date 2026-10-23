@@ -4,6 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { afterAll, describe, expect, it } from 'vitest';
 import nestjsServiceGenerator, { renderService } from './generator.js';
+import { parse } from 'yaml';
 
 const repoRoot = resolve(__dirname, '../../../..');
 
@@ -19,6 +20,9 @@ describe('nestjs-service recipe', () => {
     expect(files).toMatchInlineSnapshot(`
       [
         "products/orders-service/README.md",
+        "products/orders-service/chart/Chart.yaml",
+        "products/orders-service/chart/templates/workload.yaml",
+        "products/orders-service/chart/values.yaml",
         "products/orders-service/package.json",
         "products/orders-service/project.json",
         "products/orders-service/src/app.module.ts",
@@ -33,6 +37,13 @@ describe('nestjs-service recipe', () => {
         "products/orders-service/tsconfig.json",
       ]
     `);
+  });
+
+  it('generates a thin chart pointing at factory-lib', () => {
+    const files = renderService({ name: 'billing', directory: 'products/billing' });
+    const chart = parse(files['chart/Chart.yaml']!) as { dependencies: { repository: string }[] };
+    expect(chart.dependencies[0]!.repository).toBe('file://../../../deploy/charts/factory-lib');
+    expect(files['chart/templates/workload.yaml']).toContain('factory-lib.service');
   });
 
   it('is deterministic', () => {
