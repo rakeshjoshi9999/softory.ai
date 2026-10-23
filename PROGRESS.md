@@ -8,14 +8,15 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P1-03 orders-api material: `orders.tsp` → `generated/openapi.yaml`, Spectral, oasdiff gate (merged, PR #52)
 - P1-04 ts-angular-client emitter + `orders-api:emit-angular-client` (PR open, needs review)
 - P1-08 angular-remote recipe (merged, PR #56)
+- P1-06 Verdaccio + Changesets + `factory release` (PR open, needs review)
 
 ## In progress
 - #7 P1-07 nestjs-service recipe: PR open, awaiting review
 
 ## Next up
+- #9 P1-09 assembly CLI; #10 P1-10 gate demo.
 - #4 P1-04 ts-angular-client emitter is in review (PR #53).
 - #5 P1-05 nest-server emitter is in review (PR #54).
-- #6 P1-06 Verdaccio + Changesets.
 
 ## Resume notes
 <!-- The builder keeps one entry per in-progress issue: done so far, next step, open problems.

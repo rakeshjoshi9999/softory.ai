@@ -4,3 +4,6 @@ dist
 coverage
 graph.json
 *.log
+
+# staged emitter output for release (see tools/factory/src/release.ts)
+materials/*/packages/*/src

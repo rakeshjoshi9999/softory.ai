@@ -1,0 +1,10 @@
+{
+  "name": "@factory/orders-api-angular",
+  "version": "1.0.1",
+  "license": "MIT",
+  "description": "Typed Angular client for orders-api (emitted by ts-angular-client)",
+  "files": ["src"],
+  "exports": { ".": "./src/index.ts" },
+  "peerDependencies": { "@angular/common": "^21", "@angular/core": "^21", "rxjs": "^7" },
+  "publishConfig": { "registry": "http://localhost:4873/" }
+}

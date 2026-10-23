@@ -8,7 +8,8 @@
   },
   "scripts": {
     "nx": "nx",
-    "factory": "tsx tools/factory/src/cli.ts"
+    "factory": "tsx tools/factory/src/cli.ts",
+    "changeset": "changeset"
   },
   "devDependencies": {
     "@angular-architects/native-federation": "^21.2.6",
@@ -22,6 +23,7 @@
     "@angular/core": "^21",
     "@angular/platform-browser": "^21",
     "@angular/router": "^21",
+    "@changesets/cli": "^3.0.3",
     "@eslint/js": "^10.0.1",
     "@nestjs/common": "^11",
     "@nestjs/core": "^11",
