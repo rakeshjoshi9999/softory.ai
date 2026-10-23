@@ -3,11 +3,22 @@
 Work on exactly ONE thing per run, in this priority order: fix a reviewed PR, resume an
 interrupted issue, start a new issue.
 
-**Conflicts first.** After opening a PR, and at the start of every run, check each open
-`claude/` PR for merge conflicts with `main`. Resolve any before doing the steps below: merge
-`origin/main` into the PR branch (no rebase or force-push), regenerate lockfiles and
-`generated/` output with the repo tooling rather than by hand, run
-`pnpm nx affected -t lint test build --base=origin/main`, and push.
+**Keep every open PR mergeable (runs before everything else, and again as the last thing
+before you stop).** The owner only approves and merges; a PR must never reach them behind
+`main` or conflicted. For each open `claude/` PR, oldest first:
+- fetch `origin/main` and the PR branch; if the PR is conflicted or behind `main`, check out its
+  branch and merge `origin/main` into it (never rebase, amend or force-push),
+- resolve conflicts like this: `package.json` / `PROGRESS.md` run log / `docs/DECISIONS.md` ->
+  keep both sides' lines (log lines in date order); `PROGRESS.md` status sections -> reflect what
+  is actually merged, open and next; `pnpm-lock.yaml` -> take `main`'s then run
+  `pnpm install --no-frozen-lockfile`; `generated/` -> regenerate with the repo tooling, never by
+  hand; any other file where both sides changed the same logic -> do not guess: leave the PR
+  alone, add the `blocked` label and write the question under "Open questions for a human",
+- run `pnpm install --frozen-lockfile` and `pnpm nx affected -t lint test build --base=origin/main`;
+  push only if it exits 0,
+- do not merge PRs and do not remove `needs-review` / `claude-approved` labels because of a sync.
+After opening your own PR this run, repeat the check once so it is current with `main`.
+If the sync took the whole run, stop there and log it in PROGRESS.md.
 
 1. Read `CLAUDE.md`, `PROGRESS.md` and `docs/DECISIONS.md`.
 
