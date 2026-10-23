@@ -1,0 +1,29 @@
+{
+  "name": "orders-ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "products/orders-ui/src",
+  "projectType": "application",
+  "tags": [
+    "type:product",
+    "scope:factory"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/dist/products/orders-ui"
+      ],
+      "options": {
+        "command": "ngc -p products/orders-ui/tsconfig.app.json",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run --root . products/orders-ui",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}

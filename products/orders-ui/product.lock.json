@@ -1,0 +1,6 @@
+{
+  "registry": "http://localhost:4873/",
+  "packages": {
+    "@factory/orders-api-angular": "1.0.1"
+  }
+}

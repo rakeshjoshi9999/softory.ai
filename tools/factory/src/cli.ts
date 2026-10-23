@@ -1,3 +1,4 @@
+import { assemble } from './assemble.js';
 import { release } from './release.js';
 import { validateFile } from './validate.js';
 
@@ -9,8 +10,19 @@ if (command === 'release' && path) {
   process.exit(0);
 }
 
+if (command === 'assemble' && path) {
+  try {
+    const r = await assemble(path);
+    console.log(`${r.product}: wrote ${r.written.length} file(s), ${r.unchanged} unchanged; installed ${r.installed.join(', ') || 'no packages'}`);
+    process.exit(0);
+  } catch (e) {
+    console.error((e as Error).message);
+    process.exit(1);
+  }
+}
+
 if (command !== 'validate' || !path) {
-  console.error('usage: factory validate <path> | factory release <material>');
+  console.error('usage: factory validate <path> | factory release <material> | factory assemble <product.yaml>');
   process.exit(2);
 }
 
