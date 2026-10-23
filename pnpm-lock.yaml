@@ -123,6 +123,8 @@ importers:
 
   products/sample-product: {}
 
+  recipes/angular-remote: {}
+
   tools/factory: {}
 
 packages:

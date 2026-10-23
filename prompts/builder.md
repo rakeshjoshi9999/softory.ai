@@ -3,6 +3,12 @@
 Work on exactly ONE thing per run, in this priority order: fix a reviewed PR, resume an
 interrupted issue, start a new issue.
 
+**Conflicts first.** After opening a PR, and at the start of every run, check each open
+`claude/` PR for merge conflicts with `main`. Resolve any before doing the steps below: merge
+`origin/main` into the PR branch (no rebase or force-push), regenerate lockfiles and
+`generated/` output with the repo tooling rather than by hand, run
+`pnpm nx affected -t lint test build --base=origin/main`, and push.
+
 1. Read `CLAUDE.md`, `PROGRESS.md` and `docs/DECISIONS.md`.
 
 2. **Fix reviewed PRs first.** If an open PR on a `claude/` branch has the label
