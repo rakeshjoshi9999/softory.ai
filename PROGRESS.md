@@ -10,10 +10,11 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P1-08 angular-remote recipe (merged, PR #56)
 - P1-06 Verdaccio + Changesets + `factory release` (merged, PR #59)
 - P2-01 Dagger pipeline module (merged, PR #62)
+- P2-02 SBOM + signing (merged, PR #63)
 - P1-09 assembly CLI `factory assemble` + products orders-ui, orders-service (merged, PR #60)
 
 ## In progress
-- #12 P2-02 SBOM + signing: PR open, awaiting review
+- #13 P2-03 provenance statements: PR open, awaiting review
 
 ## Next up
 - Gate 1 review: a human closes the gate after P1-10 merges; then Phase 2 issues (`planned`) become `ready`.
@@ -35,6 +36,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-23 · #13 P2-03 · provenance.ts (in-toto v1 + SLSA v1 statement, signed with package key, schema + 3 tests), `release` writes it, `factory provenance <pkg>@<ver>`; `nx affected -t lint test build` green · branch claude/gifted-mendel-9ehw2q
 - 2026-10-23 · #12 P2-02 · attest.ts (SPDX SBOM, ECDSA P-256 sign/verify), `factory release` writes .sbom/.sig, `factory verify`, Dagger sbom/sign + argv tests, tamper test; `nx affected -t lint test build` green · branch claude/gifted-mendel-9l0s2i
 - 2026-10-23 · #11 P2-01 · pipelines/dagger module (lint/test/build/ci), SDK-free plan.ts with 4 tests against a fixture workspace; CI workflow edit and engine run blocked · draft PR · branch claude/gifted-mendel-bahxu1
 - 2026-10-23 · #10 P1-10 · contract test + scripts/gate1-demo.sh (additive passes, breaking stopped by oasdiff); fixed stale Nx cache in orders-api emit targets; `nx affected -t lint test build` green · branch claude/gifted-mendel-um3iyh

@@ -1,7 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { attest } from './attest.js';
+import { emitterRef, gitCommit, provenanceFor, writeProvenance } from './provenance.js';
 
 export const DEFAULT_REGISTRY = 'http://localhost:4873/';
 
@@ -12,6 +13,8 @@ export interface ReleasePackage {
   source: string;
   /** Barrel written into the package when the emitter does not produce one. */
   barrel?: string[];
+  /** Emitter project that produced `source`. */
+  emitter: string;
 }
 
 export function packagesFor(material: string, root = '.'): ReleasePackage[] {
@@ -22,11 +25,13 @@ export function packagesFor(material: string, root = '.'): ReleasePackage[] {
       dir: join(base, 'packages', 'angular'),
       source: join(base, 'generated', 'angular-client'),
       barrel: ['./models/index', './orders/orders.service'],
+      emitter: 'ts-angular-client',
     },
     {
       name: `@factory/${material}-nest`,
       dir: join(base, 'packages', 'nest'),
       source: join(base, 'generated', 'nest-server'),
+      emitter: 'nest-server',
     },
   ];
 }
@@ -90,7 +95,18 @@ export function release(material: string, opts: { root?: string; registry?: stri
     }
     execFileSync('npm', ['publish', '--registry', registry, '--access', 'restricted'], { cwd: pkg.dir, env, stdio: 'inherit' });
     const a = attest(pkg.dir, store, signingKey);
-    console.log(`${pkg.name}@${version}: wrote ${a.sbom} and ${a.sig}`);
+    const prov = writeProvenance(
+      provenanceFor({
+        tarball: { name: basename(a.tarball), bytes: readFileSync(a.tarball) },
+        pkgDir: pkg.dir,
+        material: { name: material, version },
+        emitters: [emitterRef(pkg.emitter, root)],
+        commit: gitCommit(root),
+      }),
+      a.tarball,
+      signingKey,
+    );
+    console.log(`${pkg.name}@${version}: wrote ${a.sbom}, ${a.sig} and ${prov.statement}`);
     published.push(`${pkg.name}@${version}`);
   }
   return published;

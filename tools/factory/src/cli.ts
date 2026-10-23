@@ -1,5 +1,6 @@
 import { assemble } from './assemble.js';
 import { verifyPackage } from './attest.js';
+import { readProvenance, renderProvenance } from './provenance.js';
 import { DEFAULT_REGISTRY, release } from './release.js';
 import { validateFile } from './validate.js';
 
@@ -29,6 +30,17 @@ if (command === 'verify' && path) {
   }
 }
 
+if (command === 'provenance' && path) {
+  try {
+    const store = process.env['FACTORY_ATTESTATION_STORE'] ?? 'dist/attestations';
+    console.log(renderProvenance(readProvenance(path, store, process.env['FACTORY_VERIFY_KEY'])));
+    process.exit(0);
+  } catch (e) {
+    console.error((e as Error).message);
+    process.exit(1);
+  }
+}
+
 if (command === 'assemble' && path) {
   try {
     const r = await assemble(path);
@@ -41,7 +53,7 @@ if (command === 'assemble' && path) {
 }
 
 if (command !== 'validate' || !path) {
-  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory assemble <product.yaml>');
+  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml>');
   process.exit(2);
 }
 
