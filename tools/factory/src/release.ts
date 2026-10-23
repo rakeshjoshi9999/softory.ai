@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { attest } from './attest.js';
 
 export const DEFAULT_REGISTRY = 'http://localhost:4873/';
 
@@ -66,8 +67,11 @@ function isPublished(pkg: ReleasePackage, version: string, env: NodeJS.ProcessEn
   }
 }
 
-export function release(material: string, opts: { root?: string; registry?: string } = {}): string[] {
+export function release(material: string, opts: { root?: string; registry?: string; store?: string; signingKey?: string } = {}): string[] {
   const root = opts.root ?? '.';
+  const signingKey = opts.signingKey ?? process.env['FACTORY_SIGNING_KEY'];
+  if (!signingKey) throw new Error('FACTORY_SIGNING_KEY (PEM, ECDSA P-256 PKCS#8) is required: every release is signed');
+  const store = opts.store ?? process.env['FACTORY_ATTESTATION_STORE'] ?? join(root, 'dist', 'attestations');
   const registry = opts.registry ?? process.env['FACTORY_REGISTRY'] ?? DEFAULT_REGISTRY;
   const pkgs = packagesFor(material, root);
   if (pendingChangesets(root)) {
@@ -85,6 +89,8 @@ export function release(material: string, opts: { root?: string; registry?: stri
       continue;
     }
     execFileSync('npm', ['publish', '--registry', registry, '--access', 'restricted'], { cwd: pkg.dir, env, stdio: 'inherit' });
+    const a = attest(pkg.dir, store, signingKey);
+    console.log(`${pkg.name}@${version}: wrote ${a.sbom} and ${a.sig}`);
     published.push(`${pkg.name}@${version}`);
   }
   return published;

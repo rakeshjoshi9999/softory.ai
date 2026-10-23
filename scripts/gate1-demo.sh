@@ -61,6 +61,10 @@ installed_has_note() {
 }
 
 ensure_registry
+if [ -z "${FACTORY_SIGNING_KEY:-}" ]; then # throwaway demo key, never written to the repo
+  FACTORY_SIGNING_KEY="$(openssl ecparam -name prime256v1 -genkey -noout | openssl pkcs8 -topk8 -nocrypt)"
+  export FACTORY_SIGNING_KEY
+fi
 say "baseline: emit and release the current spec"
 emit
 pnpm --silent factory release orders-api

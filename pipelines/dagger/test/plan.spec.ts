@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
-import { assertWorkspace, blockCommand, ciCommands } from '../src/plan.js';
+import { assertWorkspace, blockCommand, ciCommands, sbomCommand, signCommand } from '../src/plan.js';
 
 const fixture = join(fileURLToPath(new URL('.', import.meta.url)), 'fixture-workspace');
 
@@ -27,5 +27,12 @@ describe('pipeline plan', () => {
     expect(() => blockCommand('deploy' as never)).toThrow(/unknown block/);
     expect(() => blockCommand('lint', '--help')).toThrow(/invalid base/);
     expect(() => blockCommand('lint', 'a;rm -rf /')).toThrow(/invalid base/);
+  });
+
+  it('builds syft and cosign argv; the key is an env reference, never a value', () => {
+    expect(sbomCommand('p.tgz')).toEqual(['syft', 'file:p.tgz', '-o', 'spdx-json']);
+    expect(signCommand('p.tgz')).toContain('env://COSIGN_KEY');
+    expect(() => sbomCommand('--oops')).toThrow(/invalid file/);
+    expect(() => signCommand('a b')).toThrow(/invalid file/);
   });
 });
