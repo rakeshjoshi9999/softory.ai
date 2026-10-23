@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "name": "nestjs-service",
+  "version": "0.0.0",
+  "generators": {
+    "nestjs-service": {
+      "factory": "./src/generator/generator",
+      "schema": "./src/generator/schema.json",
+      "description": "Golden-path NestJS service: health endpoint, config validation, OpenTelemetry, src/ext/"
+    }
+  }
+}

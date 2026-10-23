@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "NestjsServiceRecipe",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "description": "Service name (kebab-case)", "$default": { "$source": "argv", "index": 0 } },
+    "directory": { "type": "string", "description": "Target directory, default products/<name>" },
+    "scope": { "type": "string", "description": "Nx scope tag", "default": "factory" }
+  },
+  "required": ["name"]
+}
