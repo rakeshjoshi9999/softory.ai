@@ -13,8 +13,10 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P2-02 SBOM + signing (merged, PR #63)
 - P1-09 assembly CLI `factory assemble` + products orders-ui, orders-service (merged, PR #60)
 
+- P2-03 provenance statements (merged, PR #64)
+
 ## In progress
-- #13 P2-03 provenance statements: PR open, awaiting review
+- #14 P2-04 graph-service: PR open, awaiting review
 
 ## Next up
 - Gate 1 review: a human closes the gate after P1-10 merges; then Phase 2 issues (`planned`) become `ready`.
@@ -29,6 +31,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
+- #14 P2-04: no Docker here, so tests start a throwaway local PostgreSQL via initdb (or use `TEST_DATABASE_URL`, e.g. the new `postgres` compose service). CI (workflow off-limits) needs a postgres service + `TEST_DATABASE_URL`, or the runner's preinstalled PostgreSQL works as-is. Also the graph API is hand-written in `src/ext/`, not yet a TypeSpec material: follow-up issue wanted?
 - #12 P2-02: Verdaccio cannot serve extra files, so `.sig` / `.sbom.spdx.json` go to a filesystem attestation store (`FACTORY_ATTESTATION_STORE`, default `dist/attestations/<pkg>/<version>/`), not literally into the registry. OK for now, or add a small sidecar/registry plugin later? Also `release` now requires `FACTORY_SIGNING_KEY`; `sbom`/`sign` Dagger functions are untested against the engine (no Docker daemon); release itself uses an in-process SPDX generator and Node signing (cosign-verify-blob compatible).
 - #11 P2-01: the sandbox denied editing `.github/workflows/ci.yml`. Replace the pnpm/node/Nx steps with `dagger call -m pipelines/dagger ci --src=. --base=origin/main` (install Dagger 0.21.11 first). Also `dagger call` itself was never run: no Docker daemon here, so `src/index.ts` is untested against the engine.
 - Two builder sessions both did #2 (PRs #50 and #51). Run one builder at a time, or have it claim an issue (label/assignee) before starting.
@@ -36,6 +39,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-23 · #14 P2-04 · products/graph-service assembled with nestjs-service recipe; migrations 001, GraphStore, ingest/provenance + ingest/lockfile + consumers endpoint; 5 integration tests on real PostgreSQL (throwaway local cluster, or TEST_DATABASE_URL); `nx affected -t lint test build` green · branch claude/gifted-mendel-q9urx7
 - 2026-10-23 · #13 P2-03 · provenance.ts (in-toto v1 + SLSA v1 statement, signed with package key, schema + 3 tests), `release` writes it, `factory provenance <pkg>@<ver>`; `nx affected -t lint test build` green · branch claude/gifted-mendel-9ehw2q
 - 2026-10-23 · #12 P2-02 · attest.ts (SPDX SBOM, ECDSA P-256 sign/verify), `factory release` writes .sbom/.sig, `factory verify`, Dagger sbom/sign + argv tests, tamper test; `nx affected -t lint test build` green · branch claude/gifted-mendel-9l0s2i
 - 2026-10-23 · #11 P2-01 · pipelines/dagger module (lint/test/build/ci), SDK-free plan.ts with 4 tests against a fixture workspace; CI workflow edit and engine run blocked · draft PR · branch claude/gifted-mendel-bahxu1

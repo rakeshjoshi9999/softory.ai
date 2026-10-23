@@ -6,5 +6,14 @@ services:
     volumes:
       - ./tools/registry/config.yaml:/verdaccio/conf/config.yaml:ro
       - registry-storage:/verdaccio/storage
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: factory
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
 volumes:
   registry-storage:
+  postgres-data:
