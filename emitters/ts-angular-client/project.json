@@ -1,0 +1,11 @@
+{
+  "name": "ts-angular-client",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "emitters/ts-angular-client/src",
+  "projectType": "library",
+  "tags": ["type:emitter", "scope:ts-angular-client"],
+  "targets": {
+    "build": { "executor": "nx:run-commands", "outputs": ["{workspaceRoot}/dist/emitters/ts-angular-client"], "options": { "command": "tsc -p emitters/ts-angular-client/tsconfig.lib.json", "cwd": "{workspaceRoot}" } },
+    "test": { "executor": "nx:run-commands", "options": { "command": "vitest run --root . emitters/ts-angular-client", "cwd": "{workspaceRoot}" } }
+  }
+}

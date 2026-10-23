@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "type": "object",
+  "properties": {
+    "input": { "type": "string", "description": "Path to the OpenAPI document, relative to the workspace root" },
+    "output": { "type": "string", "description": "Directory for the emitted client, relative to the workspace root" }
+  },
+  "required": ["input", "output"]
+}
