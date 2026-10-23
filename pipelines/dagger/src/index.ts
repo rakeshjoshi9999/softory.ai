@@ -1,7 +1,9 @@
-import { dag, Container, Directory, func, object } from '@dagger.io/dagger';
-import { blockCommand, ciCommands } from './plan.js';
+import { dag, Container, Directory, File, Secret, func, object } from '@dagger.io/dagger';
+import { blockCommand, ciCommands, sbomCommand, signCommand } from './plan.js';
 
 const NODE_IMAGE = 'node:22-bookworm';
+const SYFT_IMAGE = 'anchore/syft:v1.18.1';
+const COSIGN_IMAGE = 'gcr.io/projectsigstore/cosign:v2.4.1';
 
 @object()
 export class Factory {
@@ -42,5 +44,30 @@ export class Factory {
     let ctr = this.workspace(src);
     for (const cmd of ciCommands(base)) ctr = ctr.withExec(cmd);
     return ctr.stdout();
+  }
+
+  /** SPDX JSON SBOM of a package tarball, made with Syft. */
+  @func()
+  sbom(tarball: File, name = 'package.tgz'): File {
+    return dag
+      .container()
+      .from(SYFT_IMAGE)
+      .withMountedFile(`/in/${name}`, tarball)
+      .withWorkdir('/in')
+      .withExec(sbomCommand(name), { redirectStdout: '/out/sbom.spdx.json' })
+      .file('/out/sbom.spdx.json');
+  }
+
+  /** Detached signature of a tarball (base64, `cosign verify-blob` compatible). The key is a secret, e.g. env:COSIGN_KEY. */
+  @func()
+  sign(tarball: File, key: Secret, name = 'package.tgz'): File {
+    return dag
+      .container()
+      .from(COSIGN_IMAGE)
+      .withMountedFile(`/in/${name}`, tarball)
+      .withSecretVariable('COSIGN_KEY', key)
+      .withWorkdir('/in')
+      .withExec(signCommand(name), { redirectStdout: '/out/package.sig' })
+      .file('/out/package.sig');
   }
 }

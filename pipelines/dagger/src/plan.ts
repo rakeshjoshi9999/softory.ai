@@ -29,3 +29,21 @@ export function blockCommand(block: Block, base?: string): string[] {
 export function ciCommands(base?: string): string[][] {
   return BLOCKS.map((b) => blockCommand(b, base));
 }
+
+const FILE_PATTERN = /^[A-Za-z0-9._-]+$/;
+
+function assertFile(name: string): void {
+  if (!FILE_PATTERN.test(name) || name.startsWith('-')) throw new Error(`invalid file name: ${name}`);
+}
+
+/** Syft argv: SPDX JSON SBOM of one tarball. */
+export function sbomCommand(tarball: string): string[] {
+  assertFile(tarball);
+  return ['syft', `file:${tarball}`, '-o', 'spdx-json'];
+}
+
+/** Cosign argv: sign a tarball with the key held in the env var `COSIGN_KEY` (never an argument). */
+export function signCommand(tarball: string): string[] {
+  assertFile(tarball);
+  return ['cosign', 'sign-blob', '--yes', '--key', 'env://COSIGN_KEY', tarball];
+}

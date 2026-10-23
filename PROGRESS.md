@@ -9,10 +9,11 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P1-04 ts-angular-client emitter + `orders-api:emit-angular-client` (PR open, needs review)
 - P1-08 angular-remote recipe (merged, PR #56)
 - P1-06 Verdaccio + Changesets + `factory release` (merged, PR #59)
+- P2-01 Dagger pipeline module (merged, PR #62)
 - P1-09 assembly CLI `factory assemble` + products orders-ui, orders-service (merged, PR #60)
 
 ## In progress
-- #10 P1-10 Gate 1 demo: PR open, awaiting review
+- #12 P2-02 SBOM + signing: PR open, awaiting review
 
 ## Next up
 - Gate 1 review: a human closes the gate after P1-10 merges; then Phase 2 issues (`planned`) become `ready`.
@@ -27,12 +28,14 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
+- #12 P2-02: Verdaccio cannot serve extra files, so `.sig` / `.sbom.spdx.json` go to a filesystem attestation store (`FACTORY_ATTESTATION_STORE`, default `dist/attestations/<pkg>/<version>/`), not literally into the registry. OK for now, or add a small sidecar/registry plugin later? Also `release` now requires `FACTORY_SIGNING_KEY`; `sbom`/`sign` Dagger functions are untested against the engine (no Docker daemon); release itself uses an in-process SPDX generator and Node signing (cosign-verify-blob compatible).
 - #11 P2-01: the sandbox denied editing `.github/workflows/ci.yml`. Replace the pnpm/node/Nx steps with `dagger call -m pipelines/dagger ci --src=. --base=origin/main` (install Dagger 0.21.11 first). Also `dagger call` itself was never run: no Docker daemon here, so `src/index.ts` is untested against the engine.
 - Two builder sessions both did #2 (PRs #50 and #51). Run one builder at a time, or have it claim an issue (label/assignee) before starting.
 - oasdiff needs Go on the CI runner (present on ubuntu-latest). OK, or prefer a pinned Docker image?
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-23 · #12 P2-02 · attest.ts (SPDX SBOM, ECDSA P-256 sign/verify), `factory release` writes .sbom/.sig, `factory verify`, Dagger sbom/sign + argv tests, tamper test; `nx affected -t lint test build` green · branch claude/gifted-mendel-9l0s2i
 - 2026-10-23 · #11 P2-01 · pipelines/dagger module (lint/test/build/ci), SDK-free plan.ts with 4 tests against a fixture workspace; CI workflow edit and engine run blocked · draft PR · branch claude/gifted-mendel-bahxu1
 - 2026-10-23 · #10 P1-10 · contract test + scripts/gate1-demo.sh (additive passes, breaking stopped by oasdiff); fixed stale Nx cache in orders-api emit targets; `nx affected -t lint test build` green · branch claude/gifted-mendel-um3iyh
 - 2026-10-23 · #9 P1-09 · `factory assemble` (resolve from Verdaccio, run recipe, install packages, idempotent), products orders-ui + orders-service, 5 tests, lint/test/build green · branch claude/9-assembly-cli
