@@ -1,0 +1,12 @@
+apiVersion: factory/v1
+kind: Product
+metadata:
+  name: orders-service
+  owner: team-orders
+spec:
+  recipe: nestjs-service@1
+  consumes:
+    api: orders-api@^1
+  delivery:
+    pipeline: backend@1
+    envs: [preview]

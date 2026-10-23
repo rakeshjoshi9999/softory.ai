@@ -8,13 +8,15 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P1-03 orders-api material: `orders.tsp` → `generated/openapi.yaml`, Spectral, oasdiff gate (merged, PR #52)
 - P1-04 ts-angular-client emitter + `orders-api:emit-angular-client` (PR open, needs review)
 - P1-08 angular-remote recipe (merged, PR #56)
-- P1-06 Verdaccio + Changesets + `factory release` (PR open, needs review)
+- P1-06 Verdaccio + Changesets + `factory release` (merged, PR #59)
+- P1-09 assembly CLI `factory assemble` + products orders-ui, orders-service (PR open, needs review)
 
 ## In progress
+- #9 P1-09 assembly CLI: PR open, awaiting review
 - #7 P1-07 nestjs-service recipe: PR open, awaiting review
 
 ## Next up
-- #9 P1-09 assembly CLI; #10 P1-10 gate demo.
+- #10 P1-10 gate demo.
 - #4 P1-04 ts-angular-client emitter is in review (PR #53).
 - #5 P1-05 nest-server emitter is in review (PR #54).
 
@@ -28,6 +30,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-23 · #9 P1-09 · `factory assemble` (resolve from Verdaccio, run recipe, install packages, idempotent), products orders-ui + orders-service, 5 tests, lint/test/build green · branch claude/9-assembly-cli
 - 2026-10-22 · #1 P1-01 · implemented on branch claude/gifted-mendel-s8l5ww (session-designated branch instead of claude/1-*) · PR opened
 - 2026-10-22 · #1 · builder fixed PR #49 review: removed `packageManager` from package.json (CI pnpm conflict) · https://github.com/rakeshjoshi9999/softory.ai/pull/49
 - 2026-10-22 · #2 P1-02 · implemented on claude/gifted-mendel-a7vzpd · PR opened
