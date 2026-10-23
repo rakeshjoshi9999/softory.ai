@@ -1,0 +1,11 @@
+{
+  "name": "nest-server",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "emitters/nest-server/src",
+  "projectType": "library",
+  "tags": ["type:emitter", "scope:nest-server"],
+  "targets": {
+    "build": { "executor": "nx:run-commands", "outputs": ["{workspaceRoot}/dist/emitters/nest-server"], "options": { "command": "tsc -p emitters/nest-server/tsconfig.lib.json", "cwd": "{workspaceRoot}" } },
+    "test": { "executor": "nx:run-commands", "options": { "command": "vitest run --root . emitters/nest-server", "cwd": "{workspaceRoot}" } }
+  }
+}

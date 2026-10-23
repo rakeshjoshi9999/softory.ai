@@ -3,39 +3,106 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "library",
   "sourceRoot": "materials/orders-api",
-  "tags": ["type:material", "scope:orders-api"],
+  "tags": [
+    "type:material",
+    "scope:orders-api"
+  ],
   "targets": {
     "validate": {
       "executor": "nx:run-commands",
-      "inputs": ["{projectRoot}/material.yaml", "{workspaceRoot}/tools/schemas/**/*"],
+      "inputs": [
+        "{projectRoot}/material.yaml",
+        "{workspaceRoot}/tools/schemas/**/*"
+      ],
       "cache": true,
-      "options": { "command": "tsx tools/factory/src/cli.ts validate materials/orders-api/material.yaml", "cwd": "{workspaceRoot}" }
+      "options": {
+        "command": "tsx tools/factory/src/cli.ts validate materials/orders-api/material.yaml",
+        "cwd": "{workspaceRoot}"
+      }
     },
     "emit-openapi": {
       "executor": "nx:run-commands",
-      "inputs": ["{projectRoot}/*.tsp", "{projectRoot}/tspconfig.yaml"],
-      "outputs": ["{projectRoot}/generated/openapi.yaml"],
+      "inputs": [
+        "{projectRoot}/*.tsp",
+        "{projectRoot}/tspconfig.yaml"
+      ],
+      "outputs": [
+        "{projectRoot}/generated/openapi.yaml"
+      ],
       "cache": true,
-      "options": { "command": "tsp compile materials/orders-api/orders.tsp --config materials/orders-api/tspconfig.yaml", "cwd": "{workspaceRoot}" }
+      "options": {
+        "command": "tsp compile materials/orders-api/orders.tsp --config materials/orders-api/tspconfig.yaml",
+        "cwd": "{workspaceRoot}"
+      }
     },
     "lint-openapi": {
       "executor": "nx:run-commands",
-      "dependsOn": ["emit-openapi"],
-      "inputs": ["{projectRoot}/generated/openapi.yaml", "{workspaceRoot}/tools/spectral/**/*"],
+      "dependsOn": [
+        "emit-openapi"
+      ],
+      "inputs": [
+        "{projectRoot}/generated/openapi.yaml",
+        "{workspaceRoot}/tools/spectral/**/*"
+      ],
       "cache": true,
-      "options": { "command": "spectral lint materials/orders-api/generated/openapi.yaml --ruleset tools/spectral/.spectral.yaml --fail-severity warn", "cwd": "{workspaceRoot}" }
+      "options": {
+        "command": "spectral lint materials/orders-api/generated/openapi.yaml --ruleset tools/spectral/.spectral.yaml --fail-severity warn",
+        "cwd": "{workspaceRoot}"
+      }
     },
     "breaking": {
       "executor": "nx:run-commands",
-      "dependsOn": ["emit-openapi"],
-      "inputs": ["{projectRoot}/generated/openapi.yaml", "{projectRoot}/released/openapi.yaml", "{workspaceRoot}/tools/oasdiff/**/*"],
+      "dependsOn": [
+        "emit-openapi"
+      ],
+      "inputs": [
+        "{projectRoot}/generated/openapi.yaml",
+        "{projectRoot}/released/openapi.yaml",
+        "{workspaceRoot}/tools/oasdiff/**/*"
+      ],
       "cache": true,
-      "options": { "command": "tools/oasdiff/oasdiff.sh breaking materials/orders-api/released/openapi.yaml materials/orders-api/generated/openapi.yaml --fail-on ERR", "cwd": "{workspaceRoot}" }
+      "options": {
+        "command": "tools/oasdiff/oasdiff.sh breaking materials/orders-api/released/openapi.yaml materials/orders-api/generated/openapi.yaml --fail-on ERR",
+        "cwd": "{workspaceRoot}"
+      }
     },
     "test": {
       "executor": "nx:run-commands",
-      "inputs": ["default", "{workspaceRoot}/tools/schemas/**/*", "{workspaceRoot}/tools/spectral/**/*", "{workspaceRoot}/tools/oasdiff/**/*"],
-      "options": { "command": "vitest run --root . materials/orders-api", "cwd": "{workspaceRoot}" }
+      "inputs": [
+        "default",
+        "{workspaceRoot}/tools/schemas/**/*",
+        "{workspaceRoot}/tools/spectral/**/*",
+        "{workspaceRoot}/tools/oasdiff/**/*"
+      ],
+      "options": {
+        "command": "vitest run --root . materials/orders-api",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "emit-nest-server": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["emit-openapi"],
+      "inputs": [
+        "{projectRoot}/generated/openapi.yaml",
+        "{workspaceRoot}/emitters/nest-server/src/**/*"
+      ],
+      "outputs": ["{projectRoot}/generated/nest-server"],
+      "cache": true,
+      "options": {
+        "command": "tsx -e \"import {emit} from './emitters/nest-server/src/index.ts'; emit({name:'orders-api',type:'api-contract',specPath:'materials/orders-api/generated/openapi.yaml'},{outputDir:'materials/orders-api/generated/nest-server'})\"",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "emit-angular-client": {
+      "executor": "@factory/ts-angular-client:emit",
+      "dependsOn": ["emit-openapi"],
+      "inputs": ["{projectRoot}/generated/openapi.yaml"],
+      "outputs": ["{projectRoot}/generated/angular-client"],
+      "cache": true,
+      "options": {
+        "input": "materials/orders-api/generated/openapi.yaml",
+        "output": "materials/orders-api/generated/angular-client"
+      }
     }
   }
 }

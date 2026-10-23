@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "name": "angular-remote",
+  "version": "0.0.0",
+  "generators": {
+    "angular-remote": {
+      "factory": "./src/generator/generator",
+      "schema": "./src/generator/schema.json",
+      "description": "Golden-path Angular remote: standalone components, routing, Native Federation, src/ext/"
+    }
+  }
+}

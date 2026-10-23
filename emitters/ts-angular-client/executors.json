@@ -1,0 +1,9 @@
+{
+  "executors": {
+    "emit": {
+      "implementation": "./src/executors/emit/executor",
+      "schema": "./src/executors/emit/schema.json",
+      "description": "Emit a typed Angular HttpClient client from a material's OpenAPI spec"
+    }
+  }
+}
