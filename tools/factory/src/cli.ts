@@ -2,6 +2,7 @@ import { assemble } from './assemble.js';
 import { graphSync } from './graph.js';
 import { verifyPackage } from './attest.js';
 import { readProvenance, renderProvenance } from './provenance.js';
+import { impact, renderMarkdown } from './impact.js';
 import { DEFAULT_REGISTRY, release } from './release.js';
 import { validateFile } from './validate.js';
 
@@ -15,6 +16,17 @@ if (command === 'graph' && path === 'sync') {
   } catch (e) {
     console.error((e as Error).message);
     process.exit(1);
+  }
+}
+
+if (command === 'impact' && path) {
+  try {
+    const report = await impact(path.replace(/\/$/, ''));
+    console.log(process.argv.includes('--json') ? JSON.stringify(report, null, 2) : renderMarkdown(report));
+    process.exit(report.ok ? 0 : 1);
+  } catch (e) {
+    console.error((e as Error).message);
+    process.exit(2);
   }
 }
 
@@ -65,7 +77,7 @@ if (command === 'assemble' && path) {
 }
 
 if (command !== 'validate' || !path) {
-  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml> | factory graph sync');
+  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml> | factory graph sync | factory impact <material-dir> [--json]');
   process.exit(2);
 }
 
