@@ -1,0 +1,11 @@
+# kind cluster for the local platform. The local registry is wired in by scripts/platform-up.sh
+# through containerd's certs.d (see https://kind.sigs.k8s.io/docs/user/local-registry/).
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: factory
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry]
+      config_path = "/etc/containerd/certs.d"
+nodes:
+  - role: control-plane

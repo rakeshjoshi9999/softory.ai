@@ -1,0 +1,30 @@
+# Rejects any Pod image that lacks a valid Cosign signature from the factory key.
+# Replace the placeholder with the PEM public key; scripts/platform-up.sh does this from
+# FACTORY_COSIGN_PUBLIC_KEY (a file path) or generates a throwaway key pair.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-signed-images
+spec:
+  validationFailureAction: Enforce
+  webhookTimeoutSeconds: 30
+  failurePolicy: Fail
+  rules:
+    - name: verify-cosign-signature
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchExpressions:
+                  - { key: factory.dev/enforce-signatures, operator: NotIn, values: ["false"] }
+      verifyImages:
+        - imageReferences: ["*"]
+          mutateDigest: true
+          verifyDigest: true
+          required: true
+          attestors:
+            - entries:
+                - keys:
+                    publicKeys: |-
+                      @@COSIGN_PUBLIC_KEY@@

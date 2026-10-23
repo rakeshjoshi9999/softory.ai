@@ -62,3 +62,6 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-23 · Helm: one library chart (`factory-lib`) owns probes, resources and the restricted security context; per-kind thin charts and recipe-generated `products/<name>/chart/` only include a lib template · one place to harden every workload · #19
 - 2026-10-23 · Chart checks without helm: vitest asserts the structure; real `helm lint` + `kubeconform` run via `scripts/chart-check.sh` once CI installs them · no helm in sandbox, workflows off-limits · #19
 
+- 2026-10-23 · Platform pins Argo CD v2.13.3 and Kyverno v1.13.4 (both Apache-2.0), kind and `registry:2` (Apache-2.0); cosign key pair is generated per `platform-up.sh` run unless FACTORY_COSIGN_PUBLIC_KEY is given · local dev only, no committed keys · #20
+- 2026-10-23 · ApplicationSet discovers `products/*/chart` rather than `products/*/deploy` · recipes already emit `chart/` (P2-09) and renaming is outside this issue's scope · #20
+- 2026-10-23 · Platform manifests are tested by `pipelines/dagger/test/platform.spec.ts` · `deploy/` has no Nx project, and that suite already covers the charts · #20

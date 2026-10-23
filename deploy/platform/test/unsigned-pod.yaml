@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: unsigned
+  namespace: policy-test
+spec:
+  containers:
+    - name: app
+      image: localhost:5001/unsigned:latest
