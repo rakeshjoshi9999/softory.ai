@@ -16,10 +16,11 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P2-03 provenance statements (merged, PR #64)
 
 ## In progress
-- #15 P2-05 two more products + `factory graph sync`: PR open, awaiting review
+- #15 P2-05 two more products + `factory graph sync`: merged (PR #68)
 - #13 P2-03 provenance statements: merged (PR #64)
 - #14 P2-04 material graph service: PR #65 open, awaiting review
 - #19 P2-09 container images + Helm library chart: merged (PR #66)
+- #20 P2-10 GitOps on kind: draft PR #67 (needs-human), blocked on cluster run and CI job
 
 ## Next up
 - Gate 1 review: a human closes the gate after P1-10 merges; then Phase 2 issues (`planned`) become `ready`.
@@ -36,6 +37,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 ## Open questions for a human
 - #15 P2-05: the contract tests compare lockfile pins with orders-service (products cannot import emitter output or the registry in CI), not live HTTP. Also graph-service's built output cannot find `migrations/` (`../../migrations` from `dist/products/graph-service/ext`), so it only runs from a symlinked layout: follow-up issue wanted? `factory release` also crashed on a fresh checkout creating `dist/attestations/@factory/<pkg>/<ver>` (npm pack ENOENT, after publishing).
 - #14 P2-04: no Docker here, so tests start a throwaway local PostgreSQL via initdb (or use `TEST_DATABASE_URL`, e.g. the new `postgres` compose service). CI (workflow off-limits) needs a postgres service + `TEST_DATABASE_URL`, or the runner's preinstalled PostgreSQL works as-is. Also the graph API is hand-written in `src/ext/`, not yet a TypeSpec material: follow-up issue wanted?
+- #20 P2-10: (1) CI job for the kind end-to-end run is not added (`.github/workflows/` off-limits): run `scripts/platform-up.sh && scripts/platform-test.sh` on a runner with docker, kind, kubectl and cosign. (2) No Docker daemon here, so the scripts were only syntax-checked (`bash -n`) and the manifests structurally tested; never run on a real cluster. (3) The ApplicationSet watches `products/*/chart` (what the recipes emit), not `products/*/deploy` as the issue words it, and no product has a committed `chart/` yet.
 - #19 P2-09: `helm lint` / `kubeconform` are not in CI: add a step running `scripts/chart-check.sh` (needs helm + kubeconform installed; `.github/workflows/` is off-limits). Neither helm nor a Docker daemon exist here, so charts are only structurally tested (YAML parse + required probes/resources/securityContext) and the Dagger `image`/`signedImage` functions are untested against the engine.
 - #12 P2-02: Verdaccio cannot serve extra files, so `.sig` / `.sbom.spdx.json` go to a filesystem attestation store (`FACTORY_ATTESTATION_STORE`, default `dist/attestations/<pkg>/<version>/`), not literally into the registry. OK for now, or add a small sidecar/registry plugin later? Also `release` now requires `FACTORY_SIGNING_KEY`; `sbom`/`sign` Dagger functions are untested against the engine (no Docker daemon); release itself uses an in-process SPDX generator and Node signing (cosign-verify-blob compatible).
 - #11 P2-01: the sandbox denied editing `.github/workflows/ci.yml`. Replace the pnpm/node/Nx steps with `dagger call -m pipelines/dagger ci --src=. --base=origin/main` (install Dagger 0.21.11 first). Also `dagger call` itself was never run: no Docker daemon here, so `src/index.ts` is untested against the engine.
@@ -65,3 +67,4 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - 2026-10-23 · PR #65 (#14 P2-04) · builder fixed review: consumers() exact package match + prefix-collision test; `nx affected -t lint test build` green (35 tasks) · branch claude/gifted-mendel-q9urx7
 - 2026-10-23 · #19 P2-09 · Dagger `image`/`signedImage` (nginx-unprivileged / distroless Node, cosign by digest), deploy/charts/{factory-lib,nestjs-service,angular-remote}, recipes emit `chart/`, scripts/chart-check.sh; `nx affected -t lint test build` green; helm/kubeconform not run (not installed) · branch claude/gifted-mendel-ktn2pj
 - 2026-10-23 · PR #65 (#14 P2-04) · builder synced branch with main (merge, PROGRESS/DECISIONS conflicts kept both sides); `nx affected -t lint test build` green (35 tasks); sync used the run · branch claude/gifted-mendel-q9urx7
+- 2026-10-23 · #20 P2-10 · deploy/platform (kind config, Argo CD ApplicationSet, Kyverno require-signed-images), scripts/platform-up.sh + platform-test.sh, 5 structural tests; cluster run and CI job blocked · branch claude/20-gitops-kind

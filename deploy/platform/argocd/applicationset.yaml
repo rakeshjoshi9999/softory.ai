@@ -1,0 +1,33 @@
+# Discovers every product's Helm chart in git and syncs it into its own namespace.
+# Recipes emit the chart into products/<name>/chart/ (the product's deploy folder).
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: products
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/rakeshjoshi9999/softory.ai.git
+        revision: main
+        directories:
+          - path: products/*/chart
+  template:
+    metadata:
+      name: '{{ index .path.segments 1 }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/rakeshjoshi9999/softory.ai.git
+        targetRevision: main
+        path: '{{ .path.path }}'
+        helm:
+          valueFiles: [values.yaml]
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ index .path.segments 1 }}'
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+        syncOptions: [CreateNamespace=true]
