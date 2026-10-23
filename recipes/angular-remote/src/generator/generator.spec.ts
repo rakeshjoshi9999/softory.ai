@@ -4,6 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { afterAll, describe, expect, it } from 'vitest';
 import angularRemoteGenerator, { renderRemote } from './generator.js';
+import { parse } from 'yaml';
 
 const repoRoot = resolve(__dirname, '../../../..');
 
@@ -19,6 +20,9 @@ describe('angular-remote recipe', () => {
     expect(files).toMatchInlineSnapshot(`
       [
         "products/orders-ui/README.md",
+        "products/orders-ui/chart/Chart.yaml",
+        "products/orders-ui/chart/templates/workload.yaml",
+        "products/orders-ui/chart/values.yaml",
         "products/orders-ui/federation.config.js",
         "products/orders-ui/package.json",
         "products/orders-ui/project.json",
@@ -42,6 +46,13 @@ describe('angular-remote recipe', () => {
     const files = renderRemote({ name: 'orders-ui' });
     expect(files['federation.config.js']).toContain("'./routes': './src/app/remote.routes.ts'");
     expect(files['src/main.ts']).toContain('initFederation');
+  });
+
+  it('generates a thin chart pointing at factory-lib', () => {
+    const files = renderRemote({ name: 'admin', directory: 'products/admin' });
+    const chart = parse(files['chart/Chart.yaml']!) as { dependencies: { repository: string }[] };
+    expect(chart.dependencies[0]!.repository).toBe('file://../../../deploy/charts/factory-lib');
+    expect(files['chart/templates/workload.yaml']).toContain('factory-lib.static-site');
   });
 
   it('is deterministic', () => {

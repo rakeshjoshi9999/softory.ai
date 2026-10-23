@@ -47,3 +47,45 @@ export function signCommand(tarball: string): string[] {
   assertFile(tarball);
   return ['cosign', 'sign-blob', '--yes', '--key', 'env://COSIGN_KEY', tarball];
 }
+
+export type ProductKind = 'angular-remote' | 'nestjs-service';
+
+export interface ImageSpec {
+  /** Runtime base image (pinned). */
+  base: string;
+  /** Where the built output is copied to in the runtime image. */
+  dest: string;
+  /** Build output directory inside the workspace, relative to the product root. */
+  outDir: string;
+  /** Container port. */
+  port: number;
+  /** Runtime user (non-root). */
+  user: string;
+  /** Entrypoint argv, empty when the base image serves the content itself. */
+  entrypoint: string[];
+}
+
+const PRODUCT_PATTERN = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+
+/** Runtime image per product kind: static nginx-unprivileged for remotes, distroless Node for services. */
+export function imageSpec(kind: string): ImageSpec {
+  if (kind === 'angular-remote') {
+    return { base: 'nginxinc/nginx-unprivileged:1.27-alpine', dest: '/usr/share/nginx/html', outDir: 'dist', port: 8080, user: '101', entrypoint: [] };
+  }
+  if (kind === 'nestjs-service') {
+    return { base: 'gcr.io/distroless/nodejs22-debian12:nonroot', dest: '/app', outDir: 'dist', port: 3000, user: 'nonroot', entrypoint: ['/nodejs/bin/node', '/app/main.js'] };
+  }
+  throw new Error(`unknown product kind: ${kind}`);
+}
+
+/** argv that builds one product with Nx. */
+export function productBuildCommand(product: string): string[] {
+  if (!PRODUCT_PATTERN.test(product)) throw new Error(`invalid product name: ${product}`);
+  return ['pnpm', 'nx', 'build', product];
+}
+
+/** Cosign argv: sign an image by digest reference with the key in `COSIGN_KEY`. */
+export function signImageCommand(ref: string): string[] {
+  if (!/^[A-Za-z0-9._:\/-]+@sha256:[0-9a-f]{64}$/.test(ref)) throw new Error(`image reference must be pinned by digest: ${ref}`);
+  return ['cosign', 'sign', '--yes', '--key', 'env://COSIGN_KEY', ref];
+}

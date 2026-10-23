@@ -1,0 +1,1 @@
+{{- include "factory-lib.static-site" . }}

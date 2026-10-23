@@ -7,9 +7,38 @@ export interface TemplateVars {
 
 const json = (value: unknown) => JSON.stringify(value, null, 2) + '\n';
 
+/** Thin Helm chart: every template comes from the factory-lib library chart. */
+function chartFiles(v: TemplateVars): Record<string, string> {
+  return {
+    'chart/Chart.yaml': `apiVersion: v2
+name: ${v.name}
+description: Thin chart for ${v.name}; templates come from factory-lib
+type: application
+version: 0.1.0
+appVersion: "0.0.0"
+dependencies:
+  - name: factory-lib
+    version: 0.1.0
+    repository: file://${v.rootRelative}../deploy/charts/factory-lib
+`,
+    'chart/templates/workload.yaml': `{{- include "factory-lib.static-site" . }}
+`,
+    'chart/values.yaml': `replicaCount: 1
+image:
+  repository: registry.local/factory/${v.name}
+  tag: latest
+  pullPolicy: IfNotPresent
+resources:
+  requests: { cpu: 50m, memory: 64Mi }
+  limits: { cpu: 500m, memory: 256Mi }
+`,
+  };
+}
+
 export function renderTemplates(v: TemplateVars): Record<string, string> {
   const selector = `app-${v.name}`;
   return {
+    ...chartFiles(v),
     'package.json': json({ name: `@factory/${v.name}`, version: '0.0.0', private: true }),
     'project.json': json({
       name: v.name,
