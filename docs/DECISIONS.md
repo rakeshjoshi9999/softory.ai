@@ -63,3 +63,4 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-23 · Integration tests use `TEST_DATABASE_URL` if set, else initdb a throwaway cluster on a unix socket (as `postgres` when root) instead of Testcontainers · no Docker daemon in the sandbox; Testcontainers would add a dependency · #14
 - 2026-10-23 · Controllers use explicit `@Inject(Token)` · vitest/esbuild emits no decorator metadata · #14
 - 2026-10-23 · Graph API endpoints are hand-written in `src/ext/` and not yet described by a TypeSpec material · keeps this issue to the service; contract can follow · #14
+- 2026-10-23 · consumers() filters packages by exact `@factory/<material>-(nest|angular)@<version>` instead of a LIKE pattern · `orders` vs `orders-api` prefix collision found in review · #14

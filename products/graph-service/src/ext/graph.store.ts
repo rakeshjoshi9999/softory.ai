@@ -139,10 +139,11 @@ export class GraphStore {
          JOIN nodes prod ON prod.id = bp.to_id AND prod.kind = 'Product'
          JOIN edges bk ON bk.from_id = pb.id AND bk.kind = 'depends_on'
          JOIN nodes pkg ON pkg.id = bk.to_id AND pkg.kind = 'Package'
-        WHERE mv.kind = 'MaterialVersion' AND mv.key = $1 AND pkg.key LIKE $2
+        WHERE mv.kind = 'MaterialVersion' AND mv.key = $1
         ORDER BY prod.key, pb.key, pkg.key`,
-      [`${material}@${version}`, `@factory/${material.replace(/[\\%_]/g, '\\$&')}-%@${version.replace(/[\\%_]/g, '\\$&')}`],
+      [`${material}@${version}`],
     );
-    return r.rows;
+    // Exact match on the material a package was emitted for; a name pattern would also catch `<material>-*` materials.
+    return r.rows.filter((row) => row.package === `@factory/${material}-nest@${version}` || row.package === `@factory/${material}-angular@${version}`);
   }
 }

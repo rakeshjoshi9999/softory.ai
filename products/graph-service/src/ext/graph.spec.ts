@@ -102,6 +102,18 @@ describe('graph-service (PostgreSQL)', () => {
     ]);
   });
 
+  it('does not mix up materials where one name is a prefix of the other', async () => {
+    await post('/ingest/lockfile', { product: 'a', build: 'b1', packages: { '@factory/orders-nest': '1.0.1', '@factory/orders-api-nest': '1.0.1' } });
+    await post('/ingest/lockfile', { product: 'c', build: 'b1', packages: { '@factory/orders-api-angular': '1.0.1' } });
+    expect(await (await fetch(`${base}/materials/orders/versions/1.0.1/consumers`)).json()).toEqual([
+      { product: 'a', build: 'b1', package: '@factory/orders-nest@1.0.1' },
+    ]);
+    expect(await (await fetch(`${base}/materials/orders-api/versions/1.0.1/consumers`)).json()).toEqual([
+      { product: 'a', build: 'b1', package: '@factory/orders-api-nest@1.0.1' },
+      { product: 'c', build: 'b1', package: '@factory/orders-api-angular@1.0.1' },
+    ]);
+  });
+
   it('returns 404 for an unknown version, [] for a known one nobody uses, 400 for a bad lockfile', async () => {
     expect((await fetch(`${base}/materials/orders-api/versions/9.9.9/consumers`)).status).toBe(404);
     await post('/ingest/provenance', provenance('orders-api', '2.0.0'));
