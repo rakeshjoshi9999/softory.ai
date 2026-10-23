@@ -16,7 +16,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P2-03 provenance statements (merged, PR #64)
 
 ## In progress
-- #17 P2-07 Renovate propagation: PR open, awaiting review
+- #18 P2-08 lifecycle states + `factory recall`: PR open, awaiting review
+- #17 P2-07 Renovate propagation: merged (PR #70)
 - #15 P2-05 two more products + `factory graph sync`: merged (PR #68)
 - #13 P2-03 provenance statements: merged (PR #64)
 - #14 P2-04 material graph service: PR #65 open, awaiting review
@@ -38,6 +39,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
+- #18 P2-08: recall opens issues via the GitHub REST API using `GITHUB_TOKEN` + `FACTORY_RECALL_REPO` (or `GITHUB_REPOSITORY`); never run against real GitHub or Verdaccio here (mocked / injected). Re-running a recall opens duplicate issues. Also #17 stayed open after PR #70 merged: close it?
 - #17 P2-07: Renovate needs a real platform (GitHub App/self-hosted run) with network access to the registry to open PRs; `renovate.json` points at localhost:4873 for now. The dry run uses `--platform=local`, which only computes upgrades. The Renovate workflow/app is off-limits for me (`.github/workflows/`). Also the PR auto-merge bumps the lockfile pin only; re-assembly after merge is not automated yet.
 - #16 P2-06: the sandbox denied writing `.github/workflows/`. The PR-comment job is at `tools/factory/ci/impact.yml`: copy it to `.github/workflows/impact.yml`. Also: the dry-run assembly needs a registry; when it is unreachable (CI) that check is reported as skipped, only the range check and contract tests run. Consumers come from the graph service (FACTORY_GRAPH_URL), else lockfiles.
 - #15 P2-05: the contract tests compare lockfile pins with orders-service (products cannot import emitter output or the registry in CI), not live HTTP. Also graph-service's built output cannot find `migrations/` (`../../migrations` from `dist/products/graph-service/ext`), so it only runs from a symlinked layout: follow-up issue wanted? `factory release` also crashed on a fresh checkout creating `dist/attestations/@factory/<pkg>/<ver>` (npm pack ENOENT, after publishing).
@@ -51,6 +53,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-23 · #18 P2-08 · version state in graph-service (GET/PUT /materials/:n/versions/:v[/state]), `factory recall` (graph state, npm deprecate, one GitHub issue per product), `assemble` refuses RECALLED versions; 6 new tests; `nx affected -t lint test build` green · branch claude/18-recall
 - 2026-10-23 · #17 P2-07 · renovate.json (regex manager on product lockfiles, grouped, patch automerge), scripts/renovate-dry-run.sh shows upgrades for all 4 consumers, architecture doc section, 3 tests; branch claude/17-renovate-propagation
 - 2026-10-23 · #15 P2-05 · products orders-admin-ui + orders-report-worker assembled from product.yaml (orders-api@^1 -> 1.0.1), contract tests vs orders-service, `factory graph sync` (3 tests); ran it against a real graph-service + PostgreSQL: 4 products ingested; `nx affected -t lint test build` green · branch claude/15-two-more-products
 - 2026-10-23 · #14 P2-04 · products/graph-service assembled with nestjs-service recipe; migrations 001, GraphStore, ingest/provenance + ingest/lockfile + consumers endpoint; 5 integration tests on real PostgreSQL (throwaway local cluster, or TEST_DATABASE_URL); `nx affected -t lint test build` green · branch claude/gifted-mendel-q9urx7
