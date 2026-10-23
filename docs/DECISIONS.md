@@ -76,3 +76,6 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-23 · Impact classification: any oasdiff `breaking` entry of level error = breaking, any `changelog` entry = minor, none = patch; next version is the material.yaml version bumped by that class · matches the Changesets semantics used by release · #16
 - 2026-10-23 · `assemble` gains `dryRun` (no writes, no installs); impact treats an unreachable registry as "skipped" rather than failure · CI has no Verdaccio · #16
 - 2026-10-23 · Impact consumers come from the graph service, falling back to product lockfiles when it is unreachable · the graph is not available in CI · #16
+- 2026-10-23 · Renovate watches `products/*/product.lock.json` through a regex custom manager (npm datasource, Verdaccio URL), since products do not list `@factory/*` in package.json · lockfiles are where assemble records pins · #17
+- 2026-10-23 · One grouped `renovate/factory-packages` branch; only patch updates auto-merge · issue asks for grouping and patch automerge · #17
+- 2026-10-23 · Dry run uses renovate@41 via npx (AGPL-3.0, run as a dev tool only, not added to package.json) with `--platform=local` and a mock registry (`tools/renovate/mock-registry.mjs`) · Renovate 42+ needs Node 24, Verdaccio-with-publish is too heavy for a fixture · #17

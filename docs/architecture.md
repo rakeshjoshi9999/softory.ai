@@ -73,6 +73,14 @@ interface Recipe {
 Rules: emitters are pure and deterministic; gates return evidence; recipes reference plugins by
 version range; generated code lands in `generated/` and is never hand-edited.
 
+## How releases propagate
+1. A material change is released (`factory release`): the new `@factory/<material>-<target>` version is published to the registry (Verdaccio) with its SBOM, signature and provenance.
+2. Renovate (`renovate.json`) reads the pins in every `products/*/product.lock.json` (the file `factory assemble` writes) and looks `@factory/*` up in the registry.
+3. For a new version it opens one grouped branch/PR, `renovate/factory-packages`, that bumps the pin in every consuming product. Patch-only updates auto-merge when CI is green; minor and major updates wait for a human.
+4. The PR's CI runs `factory impact` and the product tests; after merge `factory assemble` re-installs the package and `factory graph sync` records the new build in the material graph.
+
+Dry run (no network, mock registry with 1.0.1 and 1.1.0): `scripts/renovate-dry-run.sh` prints the upgrades Renovate computes for every consumer product. Renovate's `local` platform cannot push, so it stops after lookup; branch creation needs a real platform. The registry URL in `renovate.json` is the local Verdaccio default and must change when a shared registry exists.
+
 ## Build roadmap and gates
 | Phase | Delivers | Gate (a human closes the `Gate n review` issue to advance) |
 | --- | --- | --- |
