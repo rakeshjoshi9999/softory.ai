@@ -6,16 +6,18 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P1-01 scaffold: pnpm + Nx 24 workspace, five folders with READMEs, module-boundary lint rule + test (merged, PR #49)
 - P1-02 schemas + `pnpm factory validate` (merged, PR #50; issue closed)
 - P1-03 orders-api material: `orders.tsp` → `generated/openapi.yaml`, Spectral, oasdiff gate (merged, PR #52)
-- P1-04 ts-angular-client emitter + `orders-api:emit-angular-client` (PR open, needs review)
+- P1-04 ts-angular-client emitter + `orders-api:emit-angular-client` (merged)
+- P1-05 nest-server emitter, P1-07 nestjs-service recipe (merged)
+- P1-10 Gate 1 demo (merged, PR #61; issue #10 still open/in-progress label, needs a human to close)
 - P1-08 angular-remote recipe (merged, PR #56)
 - P1-06 Verdaccio + Changesets + `factory release` (merged, PR #59)
 - P1-09 assembly CLI `factory assemble` + products orders-ui, orders-service (merged, PR #60)
 
 ## In progress
-- #10 P1-10 Gate 1 demo: PR open, awaiting review
+- nothing; Phase 1 tasks all merged
 
 ## Next up
-- Gate 1 review: a human closes the gate after P1-10 merges; then Phase 2 issues (`planned`) become `ready`.
+- Gate 1 review: P1-10 is merged, so a human closes the gate; then Phase 2 issues (`planned`) become `ready`.
 
 ## Gate 1 evidence (P1-10)
 - Contract test `materials/orders-api/test/contract.spec.ts` (runs in `nx test orders-api`, so in CI): generated Angular client over real HTTP against a Nest app on the generated controller base; every body is checked against `generated/openapi.yaml`.
@@ -45,3 +47,4 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - 2026-10-22 · PR #54 (#5 P1-05) · builder fixed review: emitter escapes docs/strings, validates identifiers, numeric constraints and patterns at emit time; hostile-spec tests added · https://github.com/rakeshjoshi9999/softory.ai/pull/54
 - 2026-10-22 · #7 P1-07 · nestjs-service recipe generator (health, config validation, OTel, src/ext/), file-tree snapshot + lint/tsc/test of a generated service, `nx affected -t lint test build` green · branch claude/gifted-mendel-3vbpuj
 - 2026-10-23 · no ready issues · #6 blocked by P1-04/P1-05, #9 by P1-06, #10 by P1-09; waiting on PRs #53/#54/#55
+- 2026-10-23 · no ready issues · P1-10 (PR #61) merged, no open PRs; only `planned` issues remain (Phase 2 waits for Gate 1 review); issue #10 still labelled in-progress/open, needs a human to close
