@@ -11,10 +11,20 @@
     "factory": "tsx tools/factory/src/cli.ts"
   },
   "devDependencies": {
+    "@angular-architects/native-federation": "^21.2.6",
     "@angular-devkit/core": "^21",
     "@angular-devkit/schematics": "^21",
+    "@angular/build": "^21",
+    "@angular/cli": "^21",
+    "@angular/common": "^21",
+    "@angular/compiler": "^21",
+    "@angular/compiler-cli": "^21",
+    "@angular/core": "^21",
+    "@angular/platform-browser": "^21",
+    "@angular/router": "^21",
     "@eslint/js": "^10.0.1",
     "@nx/angular": "^24.0.0",
+    "@nx/devkit": "^24",
     "@nx/eslint": "^24.0.0",
     "@nx/eslint-plugin": "^24.0.0",
     "@nx/js": "^24.0.0",
@@ -31,11 +41,13 @@
     "eslint": "^10.13.0",
     "nx": "^24.0.0",
     "orval": "^7",
+    "rxjs": "^7.8.2",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.72.0",
     "vitest": "^5.0.5",
-    "yaml": "^2.9.1"
+    "yaml": "^2.9.1",
+    "zone.js": "^0.16.3"
   },
   "scarfSettings": {
     "enabled": false
