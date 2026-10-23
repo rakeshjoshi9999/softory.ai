@@ -1,10 +1,22 @@
 import { assemble } from './assemble.js';
+import { graphSync } from './graph.js';
 import { verifyPackage } from './attest.js';
 import { readProvenance, renderProvenance } from './provenance.js';
 import { DEFAULT_REGISTRY, release } from './release.js';
 import { validateFile } from './validate.js';
 
 const [command, path] = process.argv.slice(2);
+
+if (command === 'graph' && path === 'sync') {
+  try {
+    const r = await graphSync();
+    for (const s of r.synced) console.log(`${s.product}@${s.build}: ${s.consumed.join(', ') || 'no materials'}`);
+    process.exit(0);
+  } catch (e) {
+    console.error((e as Error).message);
+    process.exit(1);
+  }
+}
 
 if (command === 'release' && path) {
   const published = release(path);
@@ -53,7 +65,7 @@ if (command === 'assemble' && path) {
 }
 
 if (command !== 'validate' || !path) {
-  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml>');
+  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml> | factory graph sync');
   process.exit(2);
 }
 
