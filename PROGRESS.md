@@ -9,16 +9,18 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P1-04 ts-angular-client emitter + `orders-api:emit-angular-client` (PR open, needs review)
 - P1-08 angular-remote recipe (merged, PR #56)
 - P1-06 Verdaccio + Changesets + `factory release` (merged, PR #59)
-- P1-09 assembly CLI `factory assemble` + products orders-ui, orders-service (PR open, needs review)
+- P1-09 assembly CLI `factory assemble` + products orders-ui, orders-service (merged, PR #60)
 
 ## In progress
-- #9 P1-09 assembly CLI: PR open, awaiting review
-- #7 P1-07 nestjs-service recipe: PR open, awaiting review
+- #10 P1-10 Gate 1 demo: PR open, awaiting review
 
 ## Next up
-- #10 P1-10 gate demo.
-- #4 P1-04 ts-angular-client emitter is in review (PR #53).
-- #5 P1-05 nest-server emitter is in review (PR #54).
+- Gate 1 review: a human closes the gate after P1-10 merges; then Phase 2 issues (`planned`) become `ready`.
+
+## Gate 1 evidence (P1-10)
+- Contract test `materials/orders-api/test/contract.spec.ts` (runs in `nx test orders-api`, so in CI): generated Angular client over real HTTP against a Nest app on the generated controller base; every body is checked against `generated/openapi.yaml`.
+- `scripts/gate1-demo.sh` (46 s, local Verdaccio): additive `note` field -> emit -> oasdiff passes -> release 1.0.1 -> 1.1.0 -> both products re-assembled with 1.1.0 and the field present -> contract test green. Breaking change (remove `currency`) -> oasdiff reports 3 errors, nothing released, registry unchanged.
+- The planner should open the `Gate 1 review` issue once this PR is merged.
 
 ## Resume notes
 <!-- The builder keeps one entry per in-progress issue: done so far, next step, open problems.
@@ -30,6 +32,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-23 · #10 P1-10 · contract test + scripts/gate1-demo.sh (additive passes, breaking stopped by oasdiff); fixed stale Nx cache in orders-api emit targets; `nx affected -t lint test build` green · branch claude/gifted-mendel-um3iyh
 - 2026-10-23 · #9 P1-09 · `factory assemble` (resolve from Verdaccio, run recipe, install packages, idempotent), products orders-ui + orders-service, 5 tests, lint/test/build green · branch claude/9-assembly-cli
 - 2026-10-22 · #1 P1-01 · implemented on branch claude/gifted-mendel-s8l5ww (session-designated branch instead of claude/1-*) · PR opened
 - 2026-10-22 · #1 · builder fixed PR #49 review: removed `packageManager` from package.json (CI pnpm conflict) · https://github.com/rakeshjoshi9999/softory.ai/pull/49

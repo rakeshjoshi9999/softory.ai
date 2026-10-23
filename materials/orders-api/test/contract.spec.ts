@@ -115,4 +115,11 @@ describe('contract: generated Angular client <-> generated NestJS controller', (
     expect(e.status).toBe(404);
     expect(conforms('Problem', { code: e.error.code, message: e.error.message })).toEqual([]);
   });
+
+  it('catches drift: bodies that break the spec are rejected by the checker', () => {
+    const drifted: Partial<typeof draft> = { ...draft };
+    delete drifted.currency;
+    expect(conformsToRequest('Order', drifted).length).toBeGreaterThan(0);
+    expect(conforms('OrderPage', { items: [{ ...draft, id: '1' }] }).length).toBeGreaterThan(0);
+  });
 });
