@@ -1,12 +1,12 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { assemble, parseRef, resolvePackage } from './assemble.js';
+import { assemble, assertSafeTarball, parseRef, resolvePackage } from './assemble.js';
 
 const scratch = mkdtempSync(join(tmpdir(), 'assemble-spec-'));
 let server: Server;
@@ -30,7 +30,11 @@ beforeAll(async () => {
     }
     if (req.url === '/@factory%2forders-api-angular') {
       const bad = { dist: { tarball: `${base}/pkg.tgz` }, deprecated: 'RECALLED: wrong totals' };
-      return void res.end(JSON.stringify({ versions: { '1.0.0': { dist: { tarball: `${base}/pkg.tgz` } }, '1.0.1': bad } }));
+      const sha = { dist: { tarball: `${base}/pkg.tgz`, shasum: createHash('sha1').update(tarball).digest('hex') } };
+      return void res.end(JSON.stringify({ versions: { '1.0.0': sha, '1.0.1': bad } }));
+    }
+    if (req.url === '/@factory%2fforeign') {
+      return void res.end(JSON.stringify({ versions: { '1.0.0': { dist: { tarball: 'http://evil.example/pkg.tgz', shasum: 'x' } } } }));
     }
     res.statusCode = 404;
     res.end('{}');
@@ -74,6 +78,37 @@ describe('assemble', () => {
   it('refuses a recalled version and prints the reason', async () => {
     await expect(resolvePackage(registry, '@factory/orders-api-angular', '^1')).rejects.toThrow(/1\.0\.1 was recalled: wrong totals/);
     expect((await resolvePackage(registry, '@factory/orders-api-angular', '1.0.0')).version).toBe('1.0.0');
+  });
+
+  it('rejects a version whose metadata has no usable integrity', async () => {
+    await expect(resolvePackage(registry, '@factory/orders-api-nest', '2.0.0')).rejects.toThrow(/no sha512 integrity or shasum/);
+  });
+
+  it('rejects a tarball URL on a foreign origin', async () => {
+    await expect(resolvePackage(registry, '@factory/foreign', '^1')).rejects.toThrow(/not on the registry origin/);
+  });
+
+  it('rejects tarballs with symlinks, hardlinks, absolute paths or .. segments', () => {
+    const make = (name: string, setup: (dir: string) => void, args: string[] = []) => {
+      const dir = join(scratch, name);
+      mkdirSync(join(dir, 'package'), { recursive: true });
+      setup(join(dir, 'package'));
+      const file = join(dir, 'x.tgz');
+      execFileSync('tar', ['-czf', file, ...args, '-C', dir, 'package']);
+      return file;
+    };
+    const sym = make('sym', (d) => symlinkSync('/etc/passwd', join(d, 'link')));
+    expect(() => assertSafeTarball(sym, 'p')).toThrow(/link/);
+    const hard = make('hard', (d) => {
+      writeFileSync(join(d, 'a'), 'a');
+      execFileSync('ln', [join(d, 'a'), join(d, 'b')]);
+    });
+    expect(() => assertSafeTarball(hard, 'p')).toThrow(/link/);
+    const abs = make('abs', (d) => writeFileSync(join(d, 'a'), 'a'), ['-P', '--transform=s,^package/a,/tmp/abs-evil,']);
+    expect(() => assertSafeTarball(abs, 'p')).toThrow(/unsafe path/);
+    const dots = make('dots', (d) => writeFileSync(join(d, 'a'), 'a'), ['--transform=s,^package/a,package/../evil,']);
+    expect(() => assertSafeTarball(dots, 'p')).toThrow(/unsafe path/);
+    expect(() => assertSafeTarball(join(scratch, 'pkg.tgz'), 'p')).not.toThrow();
   });
 
   it('runs the recipe, locks versions and installs the package', async () => {

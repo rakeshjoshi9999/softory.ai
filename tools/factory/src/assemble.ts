@@ -24,6 +24,7 @@ export interface Resolved {
   version: string;
   tarball: string;
   integrity?: string;
+  shasum?: string;
 }
 
 export function readManifest(file: string): ProductManifest {
@@ -47,13 +48,16 @@ function registryUrl(registry: string, pkg: string): string {
 export async function resolvePackage(registry: string, pkg: string, range: string): Promise<Omit<Resolved, 'alias'>> {
   const res = await fetch(registryUrl(registry, pkg));
   if (!res.ok) throw new Error(`${pkg}: registry answered ${res.status} (is ${registry} running and released?)`);
-  const doc = (await res.json()) as { versions?: Record<string, { deprecated?: string; dist: { tarball: string; integrity?: string } }> };
+  const doc = (await res.json()) as { versions?: Record<string, { deprecated?: string; dist: { tarball: string; integrity?: string; shasum?: string } }> };
   const versions = Object.keys(doc.versions ?? {});
   const version = semver.maxSatisfying(versions, semver.validRange(range) ? range : `^${range}`);
   const entry = version ? doc.versions?.[version] : undefined;
   if (!version || !entry) throw new Error(`${pkg}: no published version satisfies "${range}" (have: ${versions.join(', ') || 'none'})`);
   if (entry.deprecated?.startsWith(RECALL_PREFIX)) throw new Error(`${pkg}@${version} was recalled: ${entry.deprecated.slice(RECALL_PREFIX.length)}. Release a fixed version and update the consumes range.`);
-  return { name: pkg, version, tarball: entry.dist.tarball, integrity: entry.dist.integrity };
+  const { tarball, integrity, shasum } = entry.dist;
+  if (new URL(tarball, registry).origin !== new URL(registry).origin) throw new Error(`${pkg}@${version}: tarball ${tarball} is not on the registry origin ${new URL(registry).origin}`);
+  if (!integrity?.startsWith('sha512-') && !shasum) throw new Error(`${pkg}@${version}: registry metadata has no sha512 integrity or shasum; refusing to install an unverifiable package`);
+  return { name: pkg, version, tarball, integrity, shasum };
 }
 
 export async function resolveConsumes(manifest: ProductManifest, registry: string): Promise<Resolved[]> {
@@ -68,6 +72,18 @@ export async function resolveConsumes(manifest: ProductManifest, registry: strin
   return out;
 }
 
+/** Lists the tarball and rejects links, absolute paths and `..` segments before anything is extracted. */
+export function assertSafeTarball(file: string, label: string): void {
+  const names = execFileSync('tar', ['-tzf', file], { encoding: 'utf8' }).split('\n').filter(Boolean);
+  for (const name of names) {
+    if (name.startsWith('/') || /^[a-zA-Z]:/.test(name) || name.split(/[\\/]/).includes('..')) throw new Error(`${label}: unsafe path "${name}" in tarball`);
+  }
+  const verbose = execFileSync('tar', ['-tvzf', file], { encoding: 'utf8' }).split('\n').filter(Boolean);
+  for (const line of verbose) {
+    if (line[0] === 'l' || line[0] === 'h' || / link to /.test(line)) throw new Error(`${label}: tarball contains a link: ${line}`);
+  }
+}
+
 /** Downloads, verifies and unpacks a package into <productDir>/node_modules/<name>. */
 export async function install(productDir: string, pkg: Resolved): Promise<void> {
   const res = await fetch(pkg.tarball);
@@ -76,6 +92,10 @@ export async function install(productDir: string, pkg: Resolved): Promise<void> 
   if (pkg.integrity?.startsWith('sha512-')) {
     const actual = `sha512-${createHash('sha512').update(data).digest('base64')}`;
     if (actual !== pkg.integrity) throw new Error(`${pkg.name}@${pkg.version}: integrity check failed`);
+  } else if (pkg.shasum) {
+    if (createHash('sha1').update(data).digest('hex') !== pkg.shasum) throw new Error(`${pkg.name}@${pkg.version}: integrity check failed (shasum)`);
+  } else {
+    throw new Error(`${pkg.name}@${pkg.version}: no integrity to verify against`);
   }
   const tmp = mkdtempSync(join(tmpdir(), 'factory-assemble-'));
   try {
@@ -84,7 +104,8 @@ export async function install(productDir: string, pkg: Resolved): Promise<void> 
     const target = join(productDir, 'node_modules', pkg.name);
     rmSync(target, { recursive: true, force: true });
     mkdirSync(target, { recursive: true });
-    execFileSync('tar', ['-xzf', file, '-C', target, '--strip-components=1']);
+    assertSafeTarball(file, `${pkg.name}@${pkg.version}`);
+    execFileSync('tar', ['-xzf', file, '-C', target, '--strip-components=1', '--no-same-owner']);
     if (!existsSync(join(target, 'src', 'index.ts'))) throw new Error(`${pkg.name}@${pkg.version}: package has no src/index.ts`);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
