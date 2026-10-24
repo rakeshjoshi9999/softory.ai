@@ -14,11 +14,11 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P1-09 assembly CLI `factory assemble` + products orders-ui, orders-service (merged, PR #60)
 
 - P2-03 provenance statements (merged, PR #64)
+- P2-07 Renovate propagation (merged, PR #70; issue closed)
 
 ## In progress
 - #21 P2-11 vulnerability scan -> recall: PR open, awaiting review
 - #18 P2-08 lifecycle states + `factory recall`: PR open, awaiting review
-- #17 P2-07 Renovate propagation: merged (PR #70)
 - #15 P2-05 two more products + `factory graph sync`: merged (PR #68)
 - #13 P2-03 provenance statements: merged (PR #64)
 - #14 P2-04 material graph service: PR #65 open, awaiting review
@@ -41,8 +41,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Open questions for a human
 - #21 P2-11: the nightly job is provided at `tools/factory/ci/nightly-scan.yml` (copy to `.github/workflows/`, off-limits for me). It scans the attestation store (`FACTORY_ATTESTATION_STORE`), which CI must restore; images are scanned only via the Dagger `scan --image`. Trivy and the Dagger `scan` function were never run (no trivy/Docker here); tests use a fixture Trivy report.
-- #18 P2-08: recall opens issues via the GitHub REST API using `GITHUB_TOKEN` + `FACTORY_RECALL_REPO` (or `GITHUB_REPOSITORY`); never run against real GitHub or Verdaccio here (mocked / injected). Re-running a recall opens duplicate issues. Also #17 stayed open after PR #70 merged: close it?
-- #17 P2-07: Renovate needs a real platform (GitHub App/self-hosted run) with network access to the registry to open PRs; `renovate.json` points at localhost:4873 for now. The dry run uses `--platform=local`, which only computes upgrades. The Renovate workflow/app is off-limits for me (`.github/workflows/`). Also the PR auto-merge bumps the lockfile pin only; re-assembly after merge is not automated yet.
+- #18 P2-08: recall opens issues via the GitHub REST API using `GITHUB_TOKEN` + `FACTORY_RECALL_REPO` (or `GITHUB_REPOSITORY`); never run against real GitHub or Verdaccio here (mocked / injected). Re-running a recall opens duplicate issues.
+- #17 P2-07 (closed): Renovate needs a real platform (GitHub App/self-hosted run) with network access to the registry to open PRs; `renovate.json` points at localhost:4873 for now. The dry run uses `--platform=local`, which only computes upgrades. The Renovate workflow/app is off-limits for me (`.github/workflows/`). Also the PR auto-merge bumps the lockfile pin only; re-assembly after merge is not automated yet.
 - #16 P2-06: the sandbox denied writing `.github/workflows/`. The PR-comment job is at `tools/factory/ci/impact.yml`: copy it to `.github/workflows/impact.yml`. Also: the dry-run assembly needs a registry; when it is unreachable (CI) that check is reported as skipped, only the range check and contract tests run. Consumers come from the graph service (FACTORY_GRAPH_URL), else lockfiles.
 - #15 P2-05: the contract tests compare lockfile pins with orders-service (products cannot import emitter output or the registry in CI), not live HTTP. Also graph-service's built output cannot find `migrations/` (`../../migrations` from `dist/products/graph-service/ext`), so it only runs from a symlinked layout: follow-up issue wanted? `factory release` also crashed on a fresh checkout creating `dist/attestations/@factory/<pkg>/<ver>` (npm pack ENOENT, after publishing).
 - #14 P2-04: no Docker here, so tests start a throwaway local PostgreSQL via initdb (or use `TEST_DATABASE_URL`, e.g. the new `postgres` compose service). CI (workflow off-limits) needs a postgres service + `TEST_DATABASE_URL`, or the runner's preinstalled PostgreSQL works as-is. Also the graph API is hand-written in `src/ext/`, not yet a TypeSpec material: follow-up issue wanted?
