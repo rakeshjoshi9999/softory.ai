@@ -87,3 +87,4 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-24 · Nightly scan walks the SBOMs in the attestation store; workflow provided as `tools/factory/ci/nightly-scan.yml` because `.github/workflows/` is off-limits · #21
 - 2026-10-24 · Attestation store is resolved against the workspace root (release) and the process cwd (attest) before `npm pack` runs with cwd = package dir · a relative store made npm write into the package dir · #76
 - 2026-10-24 · Recipe-emitted `products/*/chart/` for orders-ui and orders-service are committed · the demo's re-assembly regenerated them and left the tree dirty · #76
+- 2026-10-24 · `assemble` fails closed: a version needs `sha512-` integrity or `dist.shasum`, else resolve throws; tarball URL must share the registry origin; tarballs are listed and rejected for links, absolute paths or `..` before extraction, which uses `--no-same-owner` · registry metadata and tarballs are untrusted input · #78
