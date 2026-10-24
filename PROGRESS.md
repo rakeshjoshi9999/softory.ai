@@ -28,7 +28,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - #16 P2-06 impact analysis: draft PR (needs-human: CI workflow)
 
 ## Next up
-- #76 P1-11: fix the `factory release` attestation path. `scripts/gate1-demo.sh` currently fails on a fresh checkout of main.
+- #76 P1-11: PR open, awaiting review (attestation path fixed; demo passes on a fresh checkout).
 - #75 Gate 1 review (needs-human): close it as completed once P1-11 merges and the demo passes. The planner then sets the phase to 2.
 
 ## Gate 1 evidence (P1-10)
@@ -57,6 +57,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-24 · #76 P1-11 · attest/release resolve the attestation store to an absolute path, relative-store test (fails without fix), recipe `chart/` for orders-ui/orders-service committed so the demo leaves `git status` empty; fresh-checkout `gate1-demo.sh` exits 0; `nx affected -t lint test build` green · branch claude/gifted-mendel-31nljy
+- 2026-10-24 · PR #73 · synced claude/ci-wiring with main (clean merge, nx affected green)
 - 2026-10-24 · planner · all phase-1 issues closed and no gate issue existed, so opened #75 Gate 1 review (needs-human). Re-ran scripts/gate1-demo.sh on main: it fails on a fresh checkout, so filed #76 [P1-11] (phase-1, ready). No blocked or stale in-progress issues. Phase left at 1 · branch claude/planner-2026-10-24
 - 2026-10-24 · #21 P2-11 · Dagger `scan` (Trivy JSON), `factory scan <pkg@ver>|all [--report|--sbom] [--dry-run]`, `recall --dryRun`, fixture critical-CVE test recalls in dry-run; `nx affected -t lint test build` green · branch claude/21-vuln-scan
 - 2026-10-23 · #18 P2-08 · version state in graph-service (GET/PUT /materials/:n/versions/:v[/state]), `factory recall` (graph state, npm deprecate, one GitHub issue per product), `assemble` refuses RECALLED versions; 6 new tests; `nx affected -t lint test build` green · branch claude/18-recall

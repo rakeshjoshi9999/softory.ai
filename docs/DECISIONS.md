@@ -85,3 +85,5 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-24 · Scanner is Trivy `aquasec/trivy:0.58.1` (Apache-2.0) in the Dagger `scan` function; findings are parsed from Trivy JSON in `tools/factory/src/scan.ts`, so tests use a fixture report and need no Trivy · no new npm dependency · #21
 - 2026-10-24 · Any CRITICAL finding recalls the package, reason = sorted CVE ids; `--dry-run` reads the graph but changes no state, registry or issues · #21
 - 2026-10-24 · Nightly scan walks the SBOMs in the attestation store; workflow provided as `tools/factory/ci/nightly-scan.yml` because `.github/workflows/` is off-limits · #21
+- 2026-10-24 · Attestation store is resolved against the workspace root (release) and the process cwd (attest) before `npm pack` runs with cwd = package dir · a relative store made npm write into the package dir · #76
+- 2026-10-24 · Recipe-emitted `products/*/chart/` for orders-ui and orders-service are committed · the demo's re-assembly regenerated them and left the tree dirty · #76
