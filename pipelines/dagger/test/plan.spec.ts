@@ -45,3 +45,14 @@ describe('scanCommand', () => {
     expect(() => scanCommand('image', '--oops')).toThrow(/invalid scan target/);
   });
 });
+
+import { PNPM_VERSION, pnpmSetupCommands } from '../src/plan.js';
+import { readFileSync } from 'node:fs';
+describe('pnpmSetupCommands', () => {
+  it('pins pnpm to the major the lockfile was written by', () => {
+    expect(pnpmSetupCommands()).toEqual([['corepack', 'enable'], ['corepack', 'prepare', `pnpm@${PNPM_VERSION}`, '--activate']]);
+    const lock = readFileSync(join(fileURLToPath(new URL('../../..', import.meta.url)), 'pnpm-lock.yaml'), 'utf8');
+    expect(lock).toMatch(/^lockfileVersion: '9\./m);
+    expect(PNPM_VERSION.split('.')[0]).toBe('9');
+  });
+});
