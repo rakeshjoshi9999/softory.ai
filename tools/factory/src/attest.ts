@@ -30,6 +30,18 @@ export function verifyBlob(blob: Buffer, signature: string, publicKeyPem: string
   }
 }
 
+/** Throws unless `pem` is an ECDSA P-256 private key that signs and verifies a probe. */
+export function validateSigningKey(pem: string): void {
+  try {
+    const key = createPrivateKey(pem);
+    if (key.asymmetricKeyType !== 'ec' || key.asymmetricKeyDetails?.namedCurve !== 'prime256v1') throw new Error('not an ECDSA P-256 key');
+    const probe = Buffer.from('factory-key-probe');
+    if (!verifyBlob(probe, signBlob(probe, pem), createPublicKey(key).export({ type: 'spki', format: 'pem' }).toString())) throw new Error('probe signature failed');
+  } catch (e) {
+    throw new Error(`FACTORY_SIGNING_KEY is not a usable ECDSA P-256 PKCS#8 PEM: ${(e as Error).message}`);
+  }
+}
+
 function listFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((f) => {
     const p = join(dir, f);
