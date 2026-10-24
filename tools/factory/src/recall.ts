@@ -44,7 +44,7 @@ export function issuePayload(product: string, pkg: string, version: string, reas
 const npmDeprecate = (pkg: string, message: string, registry: string) =>
   void execFileSync('npm', ['deprecate', pkg, message, '--registry', registry], { stdio: 'pipe' });
 
-/** Marks a version recalled in the graph, deprecates it on the registry and opens one issue per affected product. */
+/** Deprecates a version on the registry, marks it recalled in the graph and opens one issue per affected product. */
 export async function recall(ref: string, opts: RecallOptions): Promise<RecallResult> {
   if (!opts.reason.trim()) throw new Error('a recall needs --reason');
   const { pkg, material, version } = parsePackageRef(ref);
@@ -53,8 +53,6 @@ export async function recall(ref: string, opts: RecallOptions): Promise<RecallRe
   const f = opts.fetchImpl ?? fetch;
   const base = `${graph}/materials/${encodeURIComponent(material)}/versions/${encodeURIComponent(version)}`;
 
-  const set = opts.dryRun ? { ok: true, status: 200, text: async () => '' } : await f(`${base}/state`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ state: 'recalled', reason: opts.reason }) });
-  if (!set.ok) throw new Error(`graph service answered ${set.status} for ${material}@${version}: ${await set.text()}`);
   const consumersRes = await f(`${base}/consumers`);
   if (!consumersRes.ok) throw new Error(`graph service answered ${consumersRes.status} listing consumers`);
   const consumers = (await consumersRes.json()) as { product: string; package: string }[];
@@ -65,7 +63,10 @@ export async function recall(ref: string, opts: RecallOptions): Promise<RecallRe
     const planned = products.map((product) => ({ product, payload: issuePayload(product, pkg, version, opts.reason) }));
     return { package: pkg, material, version, products, issues: planned };
   }
+  // registry first: a half-done recall must never leave the graph saying "recalled" while the registry still serves the version
   (opts.deprecate ?? npmDeprecate)(`${pkg}@${version}`, `${RECALL_PREFIX}${opts.reason}`, registry);
+  const set = await f(`${base}/state`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ state: 'recalled', reason: opts.reason }) });
+  if (!set.ok) throw new Error(`graph service answered ${set.status} for ${material}@${version}: ${await set.text()}`);
 
   const repo = opts.repo ?? process.env['FACTORY_RECALL_REPO'] ?? process.env['GITHUB_REPOSITORY'];
   const token = opts.token ?? process.env['GITHUB_TOKEN'];

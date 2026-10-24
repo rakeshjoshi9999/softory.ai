@@ -28,6 +28,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 - #16 P2-06 impact analysis: draft PR (needs-human: CI workflow)
 
+- #74 P2-13 scan review fixes: PR open, awaiting review
+
 ## Next up
 - #76 P1-11: PR open, awaiting review (attestation path fixed; demo passes on a fresh checkout).
 - #75 Gate 1 review (needs-human): close it as completed once P1-11 merges and the demo passes. The planner then sets the phase to 2.
@@ -58,6 +60,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-24 · builder · synced PRs #93 and #92 with main (merge, no conflicts, affected lint/test/build green); then #74 P2-13 · parseTrivy tolerates missing Results, scan all skips recalled/collects failures/fails on empty store/scans images, recall order registry then graph, nightly-scan.yml permissions+auth; 5 new tests; `nx affected -t lint test build` green · branch claude/74-scan-review-fixes
 - 2026-10-24 · #76 P1-11 · attest/release resolve the attestation store to an absolute path, relative-store test (fails without fix), recipe `chart/` for orders-ui/orders-service committed so the demo leaves `git status` empty; fresh-checkout `gate1-demo.sh` exits 0; `nx affected -t lint test build` green · branch claude/gifted-mendel-31nljy
 - 2026-10-24 · PR #73 · synced claude/ci-wiring with main (clean merge, nx affected green)
 - 2026-10-24 · planner · all phase-1 issues closed and no gate issue existed, so opened #75 Gate 1 review (needs-human). Re-ran scripts/gate1-demo.sh on main: it fails on a fresh checkout, so filed #76 [P1-11] (phase-1, ready). No blocked or stale in-progress issues. Phase left at 1 · branch claude/planner-2026-10-24

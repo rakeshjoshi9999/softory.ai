@@ -1,9 +1,17 @@
 # Copy to .github/workflows/nightly-scan.yml (workflows are off-limits for the builder).
-# Needs: the attestation store restored at dist/attestations, FACTORY_GRAPH_URL, FACTORY_REGISTRY, trivy installed.
+# Needs (the job fails loudly when the attestation store is missing or empty):
+#  - attestation store: the SBOMs written by `factory release` (FACTORY_ATTESTATION_STORE, default dist/attestations),
+#    restored from wherever releases publish them before the scan step (see the restore step below),
+#  - vars FACTORY_GRAPH_URL, FACTORY_REGISTRY and optionally FACTORY_IMAGES (space/comma separated released image refs),
+#  - secret FACTORY_REGISTRY_TOKEN: npm auth token with publish rights, used by `npm deprecate` when recalling,
+#  - `issues: write` so a recall can open one issue per affected product.
 name: nightly-scan
 on:
   schedule: [{ cron: '17 2 * * *' }]
   workflow_dispatch: {}
+permissions:
+  contents: read
+  issues: write
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -14,9 +22,18 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - uses: aquasecurity/setup-trivy@v0.2.2
       - run: pnpm install --frozen-lockfile
+      # Restore the released SBOMs into dist/attestations here (artifact download or registry sidecar, depends on P2-16).
+      - name: registry auth for npm deprecate
+        env:
+          FACTORY_REGISTRY: ${{ vars.FACTORY_REGISTRY }}
+          FACTORY_REGISTRY_TOKEN: ${{ secrets.FACTORY_REGISTRY_TOKEN }}
+        run: echo "//${FACTORY_REGISTRY#*://}/:_authToken=${FACTORY_REGISTRY_TOKEN}" > .npmrc-recall
       - run: pnpm factory scan all
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FACTORY_RECALL_REPO: ${{ github.repository }}
           FACTORY_GRAPH_URL: ${{ vars.FACTORY_GRAPH_URL }}
           FACTORY_REGISTRY: ${{ vars.FACTORY_REGISTRY }}
+          FACTORY_IMAGES: ${{ vars.FACTORY_IMAGES }}
+          FACTORY_ATTESTATION_STORE: dist/attestations
+          NPM_CONFIG_USERCONFIG: .npmrc-recall
