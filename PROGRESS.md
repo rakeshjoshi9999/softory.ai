@@ -17,7 +17,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
-- #83 P2-19 graph-service runs from built output: PR open, awaiting review (Dagger `image` for it not run; see #102/#103)
+- #83 P2-19: merged (PR #113)
 - #81 P2-17 retro-review: done, PR open awaiting review; filed #98-#110 (P2-28..P2-40) and added them to #22's Blocked by
 - #80 P2-16 attestation storage ADR: PR open, awaiting a human decision (needs-human)
 - #79 P2-15: merged (PR #96)
@@ -34,6 +34,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 - #74 P2-13 scan review fixes: PR open, awaiting review
 
+- #82 P2-18: draft PR open, pnpm pin fix pushed; needs a CI `dagger` job run to confirm
+
 ## Next up
 - #76 P1-11: PR open, awaiting review (attestation path fixed; demo passes on a fresh checkout).
 - #75 Gate 1 review (needs-human): close it as completed once P1-11 merges and the demo passes. The planner then sets the phase to 2.
@@ -48,6 +50,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
+- #82 P2-18: root cause of the failing `dagger` job was unpinned corepack pnpm 12 (ERR_PNPM_IGNORED_BUILDS on install). Pinned pnpm 9.15.9 in the container; no Dagger engine here, so whether `lint`/`test`/`build` now pass end to end needs the next CI `dagger` run. If it fails further on, read that log. The `verify` job switch stays a needs-human workflow change.
 - Phase record: PROGRESS.md still says Phase 1 and no `Gate 1 review` issue existed, yet Phase 2 issues were relabelled `ready` and #11–#21 are already done. The planner did not change the phase. Closing #75 makes the record match.
 - #21 P2-11: the nightly job is provided at `tools/factory/ci/nightly-scan.yml` (copy to `.github/workflows/`, off-limits for me). It scans the attestation store (`FACTORY_ATTESTATION_STORE`), which CI must restore; images are scanned only via the Dagger `scan --image`. Trivy and the Dagger `scan` function were never run (no trivy/Docker here); tests use a fixture Trivy report.
 - #18 P2-08: recall opens issues via the GitHub REST API using `GITHUB_TOKEN` + `FACTORY_RECALL_REPO` (or `GITHUB_REPOSITORY`); never run against real GitHub or Verdaccio here (mocked / injected). Re-running a recall opens duplicate issues.
@@ -64,6 +67,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-24 · builder · synced draft PR #112 (#82) with main (merge, PROGRESS/DECISIONS kept both sides, affected green); closed stale #83 (merged via #113), unblocks #84 P2-20 for the next run · branch claude/82-dagger-run
+- 2026-10-24 · builder · no open PRs; closed stale #81 (merged via #111); #82 P2-18 · dagger job failed on corepack's default pnpm 12 (ignored build scripts); pinned pnpm 9.15.9 + test; engine not runnable here; `nx affected -t lint test build` green · branch claude/82-dagger-run · draft PR
 - 2026-10-24 · #83 P2-19 · built graph-service resolves `migrations/` next to `ext/` (build target copies them into dist); test runs the real nx build output from a temp dir outside the repo via node main.js: migrates + /health ok, fails without fix; Dagger image untouched (#102/#103 cover its outDir/node_modules); `nx affected -t lint test build` green · branch claude/83-graph-service-built
 - 2026-10-24 · builder · synced PRs #93 and #92 with main (merge, no conflicts, affected lint/test/build green); then #74 P2-13 · parseTrivy tolerates missing Results, scan all skips recalled/collects failures/fails on empty store/scans images, recall order registry then graph, nightly-scan.yml permissions+auth; 5 new tests; `nx affected -t lint test build` green · branch claude/74-scan-review-fixes
 - 2026-10-24 · #76 P1-11 · attest/release resolve the attestation store to an absolute path, relative-store test (fails without fix), recipe `chart/` for orders-ui/orders-service committed so the demo leaves `git status` empty; fresh-checkout `gate1-demo.sh` exits 0; `nx affected -t lint test build` green · branch claude/gifted-mendel-31nljy
