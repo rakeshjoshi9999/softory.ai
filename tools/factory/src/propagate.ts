@@ -21,8 +21,10 @@ export interface PropagateOptions {
 export interface PropagateDeps {
   assemble(manifest: string, dryRun: boolean): Promise<void>;
   runTests(product: string): boolean;
-  /** Creates `branch` from the current HEAD with the product's changes committed and pushed. */
-  pushBranch(branch: string, product: string, message: string): void;
+  /** Creates `branch` from `origin/<base>` with the product's changes committed and pushed, then returns to the starting branch with a clean product tree. */
+  pushBranch(branch: string, product: string, message: string, base: string): void;
+  /** Discards the product's uncommitted changes (after a failed assembly, test or push). */
+  reset(product: string): void;
 }
 
 export interface ProductOutcome {
@@ -54,11 +56,21 @@ export const realPropagateDeps = (root: string): PropagateDeps => ({
       return false;
     }
   },
-  pushBranch(branch, product, message) {
-    git(root, 'checkout', '-B', branch);
-    git(root, 'add', '--', `products/${product}`);
-    git(root, 'commit', '-m', message);
-    git(root, 'push', '--force-with-lease', '-u', 'origin', branch);
+  pushBranch(branch, product, message, base) {
+    const start = git(root, 'rev-parse', '--abbrev-ref', 'HEAD').trim();
+    try {
+      git(root, 'checkout', '-B', branch, `origin/${base}`);
+      git(root, 'add', '--', `products/${product}`);
+      git(root, 'commit', '-m', message);
+      git(root, 'push', '--force-with-lease', '-u', 'origin', branch);
+    } finally {
+      git(root, 'checkout', '-f', start);
+      this.reset(product);
+    }
+  },
+  reset(product) {
+    git(root, 'checkout', '--', `products/${product}`);
+    git(root, 'clean', '-fdq', '--', `products/${product}`);
   },
 });
 
@@ -122,17 +134,43 @@ export async function propagate(ref: string, opts: PropagateOptions = {}): Promi
       out('exists', `PR for ${branch} is already open`);
       continue;
     }
+    const abandon = (detail: string) => {
+      try {
+        deps.reset(product);
+      } catch (e) {
+        detail += ` (reset failed: ${(e as Error).message.split('\n')[0]})`;
+      }
+      out('failed', detail);
+    };
     try {
       await deps.assemble(manifestPath, false);
     } catch (e) {
-      out('failed', `assembly: ${(e as Error).message.split('\n')[0]}`);
+      abandon(`assembly: ${(e as Error).message.split('\n')[0]}`);
       continue;
     }
-    if (!deps.runTests(product)) {
-      out('failed', `nx test ${product} failed after the bump`);
+    const pinned = readLockfiles(root).find((l) => l.product === product);
+    const got = pinned && pinOf(pinned.packages, material);
+    if (got !== version) {
+      abandon(`assembly pinned ${got ?? 'nothing'}, not ${version} (is it in the registry?)`);
       continue;
     }
-    deps.pushBranch(branch, product, `chore(${product}): bump ${material} ${from} -> ${version}`);
+    let tested = false;
+    try {
+      tested = deps.runTests(product);
+    } catch (e) {
+      abandon(`nx test ${product} errored: ${(e as Error).message.split('\n')[0]}`);
+      continue;
+    }
+    if (!tested) {
+      abandon(`nx test ${product} failed after the bump`);
+      continue;
+    }
+    try {
+      deps.pushBranch(branch, product, `chore(${product}): bump ${material} ${from} -> ${version}`, base);
+    } catch (e) {
+      abandon(`push: ${(e as Error).message.split('\n')[0]}`);
+      continue;
+    }
     const created = await gh('/pulls', {
       method: 'POST',
       body: JSON.stringify({

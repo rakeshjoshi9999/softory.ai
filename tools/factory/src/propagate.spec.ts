@@ -1,8 +1,9 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { branchName, labelsFor, propagate, type PropagateDeps } from './propagate.js';
+import { branchName, labelsFor, propagate, realPropagateDeps, type PropagateDeps } from './propagate.js';
 
 let root: string;
 const product = (name: string, pin: string, range = '^1') => {
@@ -20,12 +21,27 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
-function fakes(opts: { testsOk?: boolean; existing?: string[] } = {}) {
+const pinLock = (name: string, pin: string) =>
+  writeFileSync(join(root, 'products', name, 'product.lock.json'), JSON.stringify({ registry: 'x', packages: { '@factory/orders-api-angular': pin } }));
+
+/** `resolve` is the version the fake registry hands back; the fake assemble writes it into the lockfile like the real one. */
+function fakes(opts: { testsOk?: boolean; existing?: string[]; resolve?: string; pushThrows?: boolean; testThrows?: boolean } = {}) {
   const calls: string[] = [];
   const deps: PropagateDeps = {
-    assemble: async (m, dry) => void calls.push(`assemble:${dry ? 'dry' : 'wet'}:${m.split('/').at(-2)}`),
-    runTests: (p) => (calls.push(`test:${p}`), opts.testsOk ?? true),
-    pushBranch: (b) => void calls.push(`push:${b}`),
+    assemble: async (m, dry) => {
+      calls.push(`assemble:${dry ? 'dry' : 'wet'}:${m.split('/').at(-2)}`);
+      if (!dry) pinLock(m.split('/').at(-2)!, opts.resolve ?? '1.0.2');
+    },
+    runTests: (p) => {
+      calls.push(`test:${p}`);
+      if (opts.testThrows) throw new Error('spawn failed');
+      return opts.testsOk ?? true;
+    },
+    pushBranch: (b) => {
+      calls.push(`push:${b}`);
+      if (opts.pushThrows) throw new Error('nothing to commit');
+    },
+    reset: (p) => void calls.push(`reset:${p}`),
   };
   const opened: { head?: string; labels?: string[] }[] = [];
   const fetchImpl = (async (url: string, init?: RequestInit) => {
@@ -62,7 +78,7 @@ describe('propagate', () => {
 
   it('does not auto-approve a minor bump', async () => {
     product('a-ui', '1.0.1');
-    const f = fakes();
+    const f = fakes({ resolve: '1.1.0' });
     await propagate('orders-api@1.1.0', { root, repo: 'o/r', token: 't', deps: f.deps, fetchImpl: f.fetchImpl });
     expect(f.opened[0]!.labels).toEqual(['needs-review']);
   });
@@ -85,6 +101,30 @@ describe('propagate', () => {
     expect(f.calls.some((c) => c.startsWith('push:'))).toBe(false);
   });
 
+  it('fails without a PR when the registry resolves another version than requested', async () => {
+    product('a-ui', '1.0.1');
+    const f = fakes({ resolve: '1.0.3' });
+    const r = await run(f);
+    expect(r.products[0]).toMatchObject({ status: 'failed', labels: [] });
+    expect(r.products[0]!.detail).toContain('1.0.3');
+    expect(f.opened).toHaveLength(0);
+    expect(f.calls).toContain('reset:a-ui');
+    expect(f.calls.some((c) => c.startsWith('push:') || c.startsWith('test:'))).toBe(false);
+  });
+
+  it('records a failure per product and carries on when push or tests throw', async () => {
+    product('a-ui', '1.0.1');
+    product('b-ui', '1.0.1');
+    const f = fakes({ pushThrows: true });
+    const r = await run(f);
+    expect(r.products.map((p) => [p.product, p.status])).toEqual([['a-ui', 'failed'], ['b-ui', 'failed']]);
+    expect(f.calls.filter((c) => c.startsWith('reset:'))).toEqual(['reset:a-ui', 'reset:b-ui']);
+    product('a-ui', '1.0.1');
+    product('b-ui', '1.0.1');
+    const g = fakes({ testThrows: true });
+    expect((await run(g)).products.map((p) => p.status)).toEqual(['failed', 'failed']);
+  });
+
   it('skips consumers already up to date or whose range excludes the version', async () => {
     product('new-ui', '1.1.0');
     product('pinned-ui', '1.0.1', '~1.0.0');
@@ -105,5 +145,38 @@ describe('propagate', () => {
 
   it('rejects a ref without an exact version', async () => {
     await expect(propagate('orders-api@^1', { root })).rejects.toThrow(/exact version/);
+  });
+
+  it('real git: every PR branch starts from origin/base and the base checkout is restored', async () => {
+    const sh = (cwd: string, ...a: string[]) => execFileSync('git', a, { cwd, encoding: 'utf8', stdio: 'pipe' }).trim();
+    const remote = join(root, 'remote.git');
+    const work = join(root, 'work');
+    mkdirSync(work);
+    sh(root, 'init', '-q', '--bare', '-b', 'main', remote);
+    sh(work, 'init', '-q', '-b', 'main');
+    sh(work, 'config', 'user.email', 't@t');
+    sh(work, 'config', 'user.name', 't');
+    const real = root;
+    root = work;
+    product('a-ui', '1.0.1');
+    product('b-ui', '1.0.1');
+    sh(work, 'add', '.');
+    sh(work, 'commit', '-qm', 'init');
+    sh(work, 'remote', 'add', 'origin', remote);
+    sh(work, 'push', '-q', 'origin', 'main');
+    const deps = realPropagateDeps(work);
+    for (const name of ['a-ui', 'b-ui']) {
+      pinLock(name, '1.0.2');
+      writeFileSync(join(work, 'products', name, 'stray.txt'), 'x');
+      deps.pushBranch(`b-${name}`, name, `bump ${name}`, 'main');
+      expect(sh(work, 'rev-parse', '--abbrev-ref', 'HEAD')).toBe('main');
+      expect(sh(work, 'status', '--porcelain')).toBe('');
+    }
+    expect(sh(work, 'rev-list', '--count', 'origin/main..origin/b-b-ui')).toBe('1');
+    expect(sh(work, 'diff', '--name-only', 'origin/main', 'origin/b-b-ui')).toBe('products/b-ui/product.lock.json\nproducts/b-ui/stray.txt');
+    pinLock('a-ui', '1.0.9');
+    deps.reset('a-ui');
+    expect(readFileSync(join(work, 'products', 'a-ui', 'product.lock.json'), 'utf8')).toContain('1.0.1');
+    root = real;
   });
 });
