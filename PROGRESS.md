@@ -17,8 +17,13 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
-- #84 P2-20 graph-api material: PR open, awaiting review
-- #83 P2-19 graph-service runs from built output: PR open, awaiting review (Dagger `image` for it not run; see #102/#103)
+- #84 P2-20 graph-service API as a TypeSpec material: PR #114 open, needs-review
+- #86 P2-22 `factory propagate`: PR #116 open, needs-review
+- #87 P2-23 impact dry-run assembly in CI: PR #117 open, needs-human + needs-review
+- #88 P2-24 live HTTP contract tests: PR #118 open, needs-review
+- #82 P2-18 Dagger module actually runs: draft PR #112 (blocked)
+- #85 P2-21 charts for every product + kind e2e: draft PR #115 (blocked)
+- #83 P2-19 graph-service runs from built output: merged (PR #113)
 - #81 P2-17 retro-review: done, PR open awaiting review; filed #98-#110 (P2-28..P2-40) and added them to #22's Blocked by
 - #80 P2-16 attestation storage ADR: PR open, awaiting a human decision (needs-human)
 - #79 P2-15: merged (PR #96)
@@ -36,8 +41,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - #74 P2-13 scan review fixes: PR open, awaiting review
 
 ## Next up
-- #76 P1-11: PR open, awaiting review (attestation path fixed; demo passes on a fresh checkout).
-- #75 Gate 1 review (needs-human): close it as completed once P1-11 merges and the demo passes. The planner then sets the phase to 2.
+- #76 P1-11: merged (PR #93); all phase-1 issues are closed.
+- #75 Gate 1 review (needs-human): nothing left on the factory side. A human closes it as completed; the next planner run then sets the phase to 2.
 
 ## Gate 1 evidence (P1-10)
 - Contract test `materials/orders-api/test/contract.spec.ts` (runs in `nx test orders-api`, so in CI): generated Angular client over real HTTP against a Nest app on the generated controller base; every body is checked against `generated/openapi.yaml`.
@@ -62,11 +67,13 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - #11 P2-01: the sandbox denied editing `.github/workflows/ci.yml`. Replace the pnpm/node/Nx steps with `dagger call -m pipelines/dagger ci --src=. --base=origin/main` (install Dagger 0.21.11 first). Also `dagger call` itself was never run: no Docker daemon here, so `src/index.ts` is untested against the engine.
 - Two builder sessions both did #2 (PRs #50 and #51). Run one builder at a time, or have it claim an issue (label/assignee) before starting.
 - oasdiff needs Go on the CI runner (present on ubuntu-latest). OK, or prefer a pinned Docker image?
+- oasdiff v1.32.1 needs Go >= 1.26; with an older Go, `go run` tries to download a toolchain from golang.org (blocked in the planner sandbox, 2026-10-24). Make sure CI's Go is >= 1.26 (actions/setup-go) or pin an oasdiff release binary/image.
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
 - 2026-10-24 · #84 P2-20 · materials/graph-api (TypeSpec, Spectral, oasdiff, emitters), graph-service extends generated Ingest/Versions controllers (synced into gitignored src/generated), factory CLI uses one typed graph client checked against the spec; `nx affected -t lint test build` green (44 tasks) · branch claude/gifted-mendel-iqp4uc
 - 2026-10-24 · builder · PR #112 (#82) already current with main · no action
+- 2026-10-24 · planner (2nd run) · #75 Gate 1 review still open (P1-11 merged via #93, all phase-1 issues closed), so phase left at 1 and nothing relabelled; phase-2 queue healthy (#89, #98-#109 ready), no new tasks; no blocked/in-progress issue idle for 24 h (#82/#85/#84/#86/#87/#88 all pushed today); re-run of gate1-demo.sh on main b1c0331 could not complete here: oasdiff v1.32.1 could not be fetched (Go module proxy blocked in this sandbox, and it needs Go >= 1.26), not a code failure · branch claude/planner-2026-10-24
 - 2026-10-24 · #83 P2-19 · built graph-service resolves `migrations/` next to `ext/` (build target copies them into dist); test runs the real nx build output from a temp dir outside the repo via node main.js: migrates + /health ok, fails without fix; Dagger image untouched (#102/#103 cover its outDir/node_modules); `nx affected -t lint test build` green · branch claude/83-graph-service-built
 - 2026-10-24 · builder · synced PRs #93 and #92 with main (merge, no conflicts, affected lint/test/build green); then #74 P2-13 · parseTrivy tolerates missing Results, scan all skips recalled/collects failures/fails on empty store/scans images, recall order registry then graph, nightly-scan.yml permissions+auth; 5 new tests; `nx affected -t lint test build` green · branch claude/74-scan-review-fixes
 - 2026-10-24 · #76 P1-11 · attest/release resolve the attestation store to an absolute path, relative-store test (fails without fix), recipe `chart/` for orders-ui/orders-service committed so the demo leaves `git status` empty; fresh-checkout `gate1-demo.sh` exits 0; `nx affected -t lint test build` green · branch claude/gifted-mendel-31nljy
