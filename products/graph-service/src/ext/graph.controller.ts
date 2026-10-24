@@ -1,4 +1,6 @@
-import { BadRequestException, Body, Inject, Controller, Get, NotFoundException, Param, Post, Put } from '@nestjs/common';
+import { BadRequestException, Controller, Inject, NotFoundException } from '@nestjs/common';
+import type { ConsumerDto, LockfileIngestDto, LockfileIngestedDto, ProvenanceIngestedDto, ProvenanceStatementDto, StateChangeDto, VersionInfoDto } from '../generated/graph-api';
+import { IngestControllerBase, VersionsControllerBase } from '../generated/graph-api';
 import { BadRequest, GraphStore } from './graph.store';
 
 async function guard<T>(run: () => Promise<T>): Promise<T> {
@@ -10,38 +12,45 @@ async function guard<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
-@Controller()
-export class GraphController {
-  constructor(@Inject(GraphStore) private readonly store: GraphStore) {}
+const notInGraph = (name: string, version: string) => new NotFoundException(`${name}@${version} is not in the graph`);
 
-  @Post('ingest/provenance')
-  ingestProvenance(@Body() body: unknown) {
+/** Routes come from the graph-api material's generated base classes; only the logic is hand-written. */
+@Controller()
+export class IngestController extends IngestControllerBase {
+  constructor(@Inject(GraphStore) private readonly store: GraphStore) {
+    super();
+  }
+
+  ingestProvenance(body: ProvenanceStatementDto): Promise<ProvenanceIngestedDto> {
     return guard(() => this.store.ingestProvenance(body));
   }
 
-  @Post('ingest/lockfile')
-  ingestLockfile(@Body() body: unknown) {
+  ingestLockfile(body: LockfileIngestDto): Promise<LockfileIngestedDto> {
     return guard(() => this.store.ingestLockfile(body));
   }
+}
 
-  @Get('materials/:name/versions/:version/consumers')
-  async consumers(@Param('name') name: string, @Param('version') version: string) {
-    const found = await this.store.consumers(name, version);
-    if (!found) throw new NotFoundException(`${name}@${version} is not in the graph`);
-    return found;
+@Controller()
+export class VersionsController extends VersionsControllerBase {
+  constructor(@Inject(GraphStore) private readonly store: GraphStore) {
+    super();
   }
 
-  @Get('materials/:name/versions/:version')
-  async version(@Param('name') name: string, @Param('version') version: string) {
+  async getVersion(name: string, version: string): Promise<VersionInfoDto> {
     const found = await this.store.versionInfo(name, version);
-    if (!found) throw new NotFoundException(`${name}@${version} is not in the graph`);
+    if (!found) throw notInGraph(name, version);
     return found;
   }
 
-  @Put('materials/:name/versions/:version/state')
-  async setState(@Param('name') name: string, @Param('version') version: string, @Body() body: unknown) {
+  async listConsumers(name: string, version: string): Promise<ConsumerDto[]> {
+    const found = await this.store.consumers(name, version);
+    if (!found) throw notInGraph(name, version);
+    return found;
+  }
+
+  async setVersionState(name: string, version: string, body: StateChangeDto): Promise<VersionInfoDto> {
     const found = await guard(() => this.store.setState(name, version, body));
-    if (!found) throw new NotFoundException(`${name}@${version} is not in the graph`);
+    if (!found) throw notInGraph(name, version);
     return found;
   }
 }

@@ -1,0 +1,14 @@
+apiVersion: factory/v1
+kind: Material
+metadata:
+  name: graph-api
+  type: api-contract
+  owner: team-factory
+  version: 1.0.0
+spec:
+  source: graph.tsp
+  format: typespec
+  validators: [spectral, oasdiff-breaking]
+  emitters: [ts-angular-client@1, nest-server@1]
+  dependsOn: []
+  compatibility: backward
