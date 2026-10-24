@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { Pool } from 'pg';
 
@@ -23,7 +23,8 @@ export interface Consumer {
   package: string;
 }
 
-const MIGRATIONS = join(__dirname, '../../migrations');
+/** Built output ships `migrations/` next to `ext/`; the source layout has it two levels up. */
+const MIGRATIONS = [join(__dirname, '../migrations'), join(__dirname, '../../migrations')].find((d) => existsSync(d)) ?? join(__dirname, '../migrations');
 
 const str = (v: unknown, what: string): string => {
   if (typeof v !== 'string' || v === '') throw new BadRequest(`${what} must be a non-empty string`);
