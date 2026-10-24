@@ -1,0 +1,24 @@
+name: platform-e2e
+
+# kind + Argo CD + Kyverno end to end (P2-10): an unsigned image must be rejected.
+# Manual for now, because the scripts have never run on a real cluster.
+# Once it passes reliably, add `pull_request: { paths: ['deploy/**'] }`.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  kind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: helm/kind-action@v1
+        with:
+          install_only: true
+      - name: Bring up the platform
+        run: bash scripts/platform-up.sh
+      - name: Unsigned image is rejected
+        run: bash scripts/platform-test.sh

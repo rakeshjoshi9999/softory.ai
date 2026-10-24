@@ -49,3 +49,30 @@ jobs:
             -H "anthropic-version: 2023-06-01" \
             -H "Content-Type: application/json" \
             --data @payload.json
+
+  # helm lint + kubeconform for the thin charts (P2-09). Not a required check yet.
+  charts:
+    runs-on: ubuntu-latest
+    continue-on-error: true   # first real helm run; make it blocking once green
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+      - name: Install kubeconform
+        run: |
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | sudo tar xz -C /usr/local/bin kubeconform
+      - run: bash scripts/chart-check.sh
+
+  # First real run of the Dagger pipeline module (P2-01). Informational until it is green;
+  # then switch the verify job to `dagger call ci` and drop this job.
+  dagger:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Dagger v0.21.11
+        run: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin DAGGER_VERSION=0.21.11 sudo -E sh
+      - run: dagger call -m pipelines/dagger ci --src=. --base=origin/main
