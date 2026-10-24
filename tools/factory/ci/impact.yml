@@ -12,6 +12,12 @@ permissions:
 jobs:
   impact:
     runs-on: ubuntu-latest
+    env:
+      FACTORY_REGISTRY: http://localhost:4873/
+    services:
+      registry:
+        image: verdaccio/verdaccio:6
+        ports: ['4873:4873']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,14 +33,29 @@ jobs:
         with:
           go-version: stable
       - run: pnpm install --frozen-lockfile
+      - name: Throwaway signing key
+        run: |
+          key="$(openssl ecparam -name prime256v1 -genkey -noout | openssl pkcs8 -topk8 -nocrypt)"
+          echo "FACTORY_SIGNING_KEY<<EOF" >> "$GITHUB_ENV"; echo "$key" >> "$GITHUB_ENV"; echo "EOF" >> "$GITHUB_ENV"
+      - name: Release the base branch's current versions into the registry
+        shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git worktree add ../base "origin/$BASE_REF"
+          (cd ../base && pnpm install --frozen-lockfile \
+            && pnpm nx run-many -t emit-openapi emit-nest-server emit-angular-client --output-style=static \
+            && for m in $(ls materials); do pnpm exec tsx tools/factory/src/cli.ts release "$m"; done) || echo "base release failed; the impact report will skip the dry-run" >&2
       - name: Emit specs
-        run: pnpm nx run-many -t emit-openapi
+        run: pnpm nx run-many -t emit-openapi emit-nest-server emit-angular-client --output-style=static
       - name: Impact report
         shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           : > impact.md
-          for m in $(git diff --name-only origin/${{ github.base_ref }}...HEAD -- materials | cut -d/ -f2 | sort -u); do
-            pnpm exec tsx tools/factory/src/cli.ts impact "materials/$m" >> impact.md || true
+          for m in $(git diff --name-only "origin/$BASE_REF"...HEAD -- materials | cut -d/ -f2 | sort -u); do
+            pnpm exec tsx tools/factory/src/cli.ts impact "materials/$m" --seed-registry >> impact.md || true
           done
       - name: Post PR comment
         uses: actions/github-script@v7

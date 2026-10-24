@@ -1,10 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import semver from 'semver';
 import { parse } from 'yaml';
 import { assemble, parseRef, readManifest } from './assemble.js';
 import { DEFAULT_GRAPH_URL, readLockfiles } from './graph.js';
+import { DEFAULT_REGISTRY, packagesFor, release } from './release.js';
 
 export type Change = 'patch' | 'minor' | 'breaking';
 
@@ -26,6 +27,8 @@ export interface ImpactReport {
   /** oasdiff messages behind the classification. */
   findings: string[];
   products: ProductImpact[];
+  /** `run` when the dry-run assembly resolved packages from a registry, `skipped` when none was reachable. */
+  dryRun: 'run' | 'skipped';
   ok: boolean;
 }
 
@@ -35,6 +38,10 @@ export interface ImpactDeps {
   oasdiff(args: string[]): string;
   /** Product names consuming `material`, or null when the graph is unreachable. */
   graphConsumers(material: string, version: string): Promise<string[] | null>;
+  /** True when the registry answers; the dry-run assembly is skipped otherwise. */
+  registryReachable(): Promise<boolean>;
+  /** Publishes the proposed version of `material` (from `generated/`) so consumers can resolve it. */
+  seedRegistry?(material: string, version: string): void;
   dryAssemble(manifest: string): Promise<{ ok: boolean; detail: string }>;
   runTests(product: string): { ok: boolean; detail: string };
 }
@@ -79,6 +86,23 @@ export const realDeps = (root: string): ImpactDeps => ({
       return null;
     }
   },
+  async registryReachable() {
+    const registry = process.env['FACTORY_REGISTRY'] ?? DEFAULT_REGISTRY;
+    try {
+      return (await fetch(`${registry.replace(/\/?$/, '/')}-/ping`)).ok;
+    } catch {
+      return false;
+    }
+  },
+  seedRegistry(material, version) {
+    for (const pkg of packagesFor(material, root)) {
+      const file = join(pkg.dir, 'package.json');
+      const json = JSON.parse(readFileSync(file, 'utf8')) as { version: string };
+      json.version = version;
+      writeFileSync(file, `${JSON.stringify(json, null, 2)}\n`);
+    }
+    release(material, { root });
+  },
   async dryAssemble(manifest) {
     try {
       const r = await assemble(manifest, { root, dryRun: true });
@@ -98,7 +122,7 @@ export const realDeps = (root: string): ImpactDeps => ({
 });
 
 /** Reports what changing `materials/<name>` would do to the products that consume it. */
-export async function impact(materialDir: string, opts: { root?: string; deps?: ImpactDeps } = {}): Promise<ImpactReport> {
+export async function impact(materialDir: string, opts: { root?: string; deps?: ImpactDeps; seed?: boolean } = {}): Promise<ImpactReport> {
   const root = opts.root ?? '.';
   const deps = opts.deps ?? realDeps(root);
   const dir = join(root, materialDir);
@@ -116,6 +140,9 @@ export async function impact(materialDir: string, opts: { root?: string; deps?: 
   const names = fromGraph ?? lock.map((l) => l.product);
   const via: ProductImpact['via'] = fromGraph ? 'graph' : 'lockfile';
 
+  const reachable = await deps.registryReachable();
+  if (reachable && opts.seed) deps.seedRegistry?.(meta.name, next);
+
   const products: ProductImpact[] = [];
   for (const product of [...new Set(names)].sort()) {
     const manifestPath = join(root, 'products', product, 'product.yaml');
@@ -127,12 +154,16 @@ export async function impact(materialDir: string, opts: { root?: string; deps?: 
       product,
       via,
       rangeAccepts,
-      assemble: existsSync(manifestPath) ? await deps.dryAssemble(manifestPath) : { ok: false, detail: 'no product.yaml' },
+      assemble: !existsSync(manifestPath)
+        ? { ok: false, detail: 'no product.yaml' }
+        : reachable
+          ? await deps.dryAssemble(manifestPath)
+          : { ok: true, detail: 'skipped, registry unreachable' },
       tests: deps.runTests(product),
     });
   }
   const ok = products.every((p) => p.rangeAccepts && p.assemble.ok && p.tests.ok);
-  return { material: meta.name, current: meta.version, next, change, findings, products, ok };
+  return { material: meta.name, current: meta.version, next, change, findings, products, dryRun: reachable ? 'run' : 'skipped', ok };
 }
 
 /** Version of the material the lockfiles pin today (falls back to the material's own version). */
@@ -158,6 +189,7 @@ export function renderMarkdown(r: ImpactReport): string {
     lines.push('| Product | Range accepts next | Dry-run assembly | Contract tests |', '| --- | --- | --- | --- |');
     for (const p of r.products) lines.push(`| ${p.product} | ${mark(p.rangeAccepts)} | ${mark(p.assemble.ok)} (${p.assemble.detail}) | ${mark(p.tests.ok)} (${p.tests.detail}) |`);
   }
+  lines.push('', r.dryRun === 'run' ? 'Dry-run assembly: run against the registry.' : 'Dry-run assembly: **skipped** (registry unreachable).');
   lines.push('', r.ok ? 'Result: no consumer breaks.' : 'Result: **at least one consumer breaks.**');
   return `${lines.join('\n')}\n`;
 }

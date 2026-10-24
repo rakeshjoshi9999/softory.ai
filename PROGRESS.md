@@ -17,6 +17,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
+- #87 P2-23 impact report dry-run assembly in CI: PR open, awaiting review (needs-human: copy `tools/factory/ci/impact.yml` to `.github/workflows/`)
 - #83 P2-19 graph-service runs from built output: PR open, awaiting review (Dagger `image` for it not run; see #102/#103)
 - #81 P2-17 retro-review: done, PR open awaiting review; filed #98-#110 (P2-28..P2-40) and added them to #22's Blocked by
 - #80 P2-16 attestation storage ADR: PR open, awaiting a human decision (needs-human)
@@ -48,6 +49,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
+- #87 P2-23: `impact.yml` (Verdaccio service, base-branch release, `--seed-registry`) was never run in Actions or against Verdaccio here; a human copies it to `.github/workflows/impact.yml` and checks the first PR comment says "Dry-run assembly: run". It also folds in the safe `BASE_REF` env from #90.
 - Phase record: PROGRESS.md still says Phase 1 and no `Gate 1 review` issue existed, yet Phase 2 issues were relabelled `ready` and #11–#21 are already done. The planner did not change the phase. Closing #75 makes the record match.
 - #21 P2-11: the nightly job is provided at `tools/factory/ci/nightly-scan.yml` (copy to `.github/workflows/`, off-limits for me). It scans the attestation store (`FACTORY_ATTESTATION_STORE`), which CI must restore; images are scanned only via the Dagger `scan --image`. Trivy and the Dagger `scan` function were never run (no trivy/Docker here); tests use a fixture Trivy report.
 - #18 P2-08: recall opens issues via the GitHub REST API using `GITHUB_TOKEN` + `FACTORY_RECALL_REPO` (or `GITHUB_REPOSITORY`); never run against real GitHub or Verdaccio here (mocked / injected). Re-running a recall opens duplicate issues.
@@ -101,3 +103,4 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - 2026-10-24 · builder · synced PR #94 (#74) with main (PROGRESS/DECISIONS kept both sides, affected green); then #78 P2-14 · assemble fails closed on missing integrity (sha512, else shasum), foreign-origin tarball URL, unsafe tarballs (links/abs/`..`) + `--no-same-owner`; 3 new tests (fail without fix); `nx affected -t lint test build` green · branch claude/78-assembly-security
 - 2026-10-24 · #80 P2-16 · docs/adr/0001-attestation-storage.md compares 4 options, recommends companion npm package; closed stale #79 (PR #96 merged); docs only · branch claude/80-attestation-adr
 - 2026-10-24 · #81 P2-17 · reviewer subagent reviewed merged PRs #62, #66, #67, #69: 13 blocking problems filed as #98-#110 (P2-28..P2-40, #110 needs-human), summary comment on each PR, #22 Blocked by extended; backlog/phase-2.json not updated (follow-up for planner) · docs only · branch claude/gifted-mendel-c9z1n0
+- 2026-10-24 · #87 P2-23 · impact reports `dryRun: run|skipped` (registry ping), `--seed-registry` publishes the proposed version before the dry-run, impact.yml starts Verdaccio and releases base versions; 3 new tests; `nx affected -t lint test build` green · branch claude/87-impact-ci-dryrun
