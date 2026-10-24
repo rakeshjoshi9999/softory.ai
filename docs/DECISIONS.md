@@ -94,3 +94,4 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-24 · Proposed (not accepted): attestations as a companion npm package per release, filesystem store kept only as staging · one registry and auth path, stateless verify/scan/graph · #80
 - 2026-10-24 · graph-service build copies `migrations/` to `dist/products/graph-service/migrations`; GraphStore uses `../migrations` if present, else the source-layout `../../migrations` · one resolver works for source and built runs · #83
 - 2026-10-24 · Criterion 2 met by the no-Docker alternative (built output run from a temp dir with node_modules symlinked); Dagger `image` left to #102/#103 · out of scope here · #83
+- 2026-10-24 · graph-service chart rendered from the nestjs-service recipe templates (identical to what `assemble` emits); `chart-check.sh` also checks `products/*/chart`; a vitest asserts every product with a product.yaml has a chart · P2-21 criteria 1 and 2 · #85

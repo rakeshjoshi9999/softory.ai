@@ -81,6 +81,9 @@ version range; generated code lands in `generated/` and is never hand-edited.
 
 Dry run (no network, mock registry with 1.0.1 and 1.1.0): `scripts/renovate-dry-run.sh` prints the upgrades Renovate computes for every consumer product. Renovate's `local` platform cannot push, so it stops after lookup; branch creation needs a real platform. The registry URL in `renovate.json` is the local Verdaccio default and must change when a shared registry exists.
 
+## Deployment charts
+Every recipe emits a thin Helm chart into `products/<name>/chart/` (templates come from the `factory-lib` library chart in `deploy/charts/`). The Argo CD ApplicationSet (`deploy/platform/argocd/applicationset.yaml`) discovers products through the path `products/*/chart`, and `scripts/chart-check.sh` runs `helm lint` + `kubeconform` on the per-kind charts and on every product chart.
+
 ## Build roadmap and gates
 | Phase | Delivers | Gate (a human closes the `Gate n review` issue to advance) |
 | --- | --- | --- |
