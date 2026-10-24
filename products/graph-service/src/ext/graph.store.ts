@@ -7,6 +7,16 @@ export type EdgeKind = 'depends_on' | 'emitted_by' | 'consumed_by';
 
 export class BadRequest extends Error {}
 
+export const STATES = ['draft', 'released', 'deprecated', 'recalled'] as const;
+export type VersionState = (typeof STATES)[number];
+
+export interface VersionInfo {
+  material: string;
+  version: string;
+  state: VersionState;
+  reason?: string;
+}
+
 export interface Consumer {
   product: string;
   build: string;
@@ -145,5 +155,26 @@ export class GraphStore {
     );
     // Exact match on the material a package was emitted for; a name pattern would also catch `<material>-*` materials.
     return r.rows.filter((row) => row.package === `@factory/${material}-nest@${version}` || row.package === `@factory/${material}-angular@${version}`);
+  }
+
+  /** Lifecycle state of a material version (`released` unless set); null when the version is unknown. */
+  async versionInfo(material: string, version: string): Promise<VersionInfo | null> {
+    const r = await this.pool.query<{ props: { state?: VersionState; reason?: string } }>('SELECT props FROM nodes WHERE kind = $1 AND key = $2', ['MaterialVersion', `${material}@${version}`]);
+    if (r.rowCount === 0) return null;
+    const { state, reason } = r.rows[0]!.props;
+    return { material, version, state: state ?? 'released', ...(reason ? { reason } : {}) };
+  }
+
+  async setState(material: string, version: string, body: unknown): Promise<VersionInfo | null> {
+    const b = obj(body, 'body');
+    const state = b['state'];
+    if (!STATES.includes(state as VersionState)) throw new BadRequest(`state must be one of ${STATES.join(', ')}`);
+    const reason = b['reason'] === undefined ? undefined : str(b['reason'], 'reason');
+    if (state === 'recalled' && !reason) throw new BadRequest('a recall needs a reason');
+    const r = await this.pool.query(
+      `UPDATE nodes SET props = (props - 'reason') || $2::jsonb WHERE kind = 'MaterialVersion' AND key = $1`,
+      [`${material}@${version}`, JSON.stringify({ state, ...(reason ? { reason } : {}) })],
+    );
+    return r.rowCount === 0 ? null : this.versionInfo(material, version);
   }
 }

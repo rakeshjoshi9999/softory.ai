@@ -121,4 +121,19 @@ describe('graph-service (PostgreSQL)', () => {
     expect((await post('/ingest/lockfile', { product: 'p', build: 'b', packages: { 'left-pad': '1.0.0' } })).status).toBe(400);
     expect((await post('/ingest/lockfile', { product: 'p' })).status).toBe(400);
   });
+
+  it('stores a lifecycle state per version, survives re-ingest, and validates input', async () => {
+    const put = (v: string, body: unknown) => fetch(`${base}/materials/orders-api/versions/${v}/state`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    await post('/ingest/provenance', provenance('orders-api', '1.0.1'));
+    expect(await (await fetch(`${base}/materials/orders-api/versions/1.0.1`)).json()).toEqual({ material: 'orders-api', version: '1.0.1', state: 'released' });
+    expect(await (await put('1.0.1', { state: 'recalled', reason: 'wrong totals' })).json()).toEqual({ material: 'orders-api', version: '1.0.1', state: 'recalled', reason: 'wrong totals' });
+    await post('/ingest/provenance', provenance('orders-api', '1.0.1'));
+    expect((await (await fetch(`${base}/materials/orders-api/versions/1.0.1`)).json()).state).toBe('recalled');
+    expect((await put('1.0.1', { state: 'deprecated' })).status).toBe(200);
+    expect(await (await fetch(`${base}/materials/orders-api/versions/1.0.1`)).json()).toEqual({ material: 'orders-api', version: '1.0.1', state: 'deprecated' });
+    expect((await put('1.0.1', { state: 'recalled' })).status).toBe(400);
+    expect((await put('1.0.1', { state: 'bogus' })).status).toBe(400);
+    expect((await put('9.9.9', { state: 'draft' })).status).toBe(404);
+    expect((await fetch(`${base}/materials/orders-api/versions/9.9.9`)).status).toBe(404);
+  });
 });

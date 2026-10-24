@@ -28,6 +28,10 @@ beforeAll(async () => {
       const integrity = `sha512-${createHash('sha512').update(tarball).digest('base64')}`;
       return void res.end(JSON.stringify({ versions: { '1.0.0': dist(`${base}/pkg.tgz`, 'sha512-bad'), '1.2.0': dist(`${base}/pkg.tgz`, integrity), '2.0.0': dist(`${base}/pkg.tgz`) } }));
     }
+    if (req.url === '/@factory%2forders-api-angular') {
+      const bad = { dist: { tarball: `${base}/pkg.tgz` }, deprecated: 'RECALLED: wrong totals' };
+      return void res.end(JSON.stringify({ versions: { '1.0.0': { dist: { tarball: `${base}/pkg.tgz` } }, '1.0.1': bad } }));
+    }
     res.statusCode = 404;
     res.end('{}');
   });
@@ -65,6 +69,11 @@ describe('assemble', () => {
     expect((await resolvePackage(registry, '@factory/orders-api-nest', '^1')).version).toBe('1.2.0');
     await expect(resolvePackage(registry, '@factory/orders-api-nest', '^3')).rejects.toThrow(/no published version/);
     await expect(resolvePackage(registry, '@factory/missing', '^1')).rejects.toThrow(/404/);
+  });
+
+  it('refuses a recalled version and prints the reason', async () => {
+    await expect(resolvePackage(registry, '@factory/orders-api-angular', '^1')).rejects.toThrow(/1\.0\.1 was recalled: wrong totals/);
+    expect((await resolvePackage(registry, '@factory/orders-api-angular', '1.0.0')).version).toBe('1.0.0');
   });
 
   it('runs the recipe, locks versions and installs the package', async () => {

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Inject, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
+import { BadRequestException, Body, Inject, Controller, Get, NotFoundException, Param, Post, Put } from '@nestjs/common';
 import { BadRequest, GraphStore } from './graph.store';
 
 async function guard<T>(run: () => Promise<T>): Promise<T> {
@@ -27,6 +27,20 @@ export class GraphController {
   @Get('materials/:name/versions/:version/consumers')
   async consumers(@Param('name') name: string, @Param('version') version: string) {
     const found = await this.store.consumers(name, version);
+    if (!found) throw new NotFoundException(`${name}@${version} is not in the graph`);
+    return found;
+  }
+
+  @Get('materials/:name/versions/:version')
+  async version(@Param('name') name: string, @Param('version') version: string) {
+    const found = await this.store.versionInfo(name, version);
+    if (!found) throw new NotFoundException(`${name}@${version} is not in the graph`);
+    return found;
+  }
+
+  @Put('materials/:name/versions/:version/state')
+  async setState(@Param('name') name: string, @Param('version') version: string, @Body() body: unknown) {
+    const found = await guard(() => this.store.setState(name, version, body));
     if (!found) throw new NotFoundException(`${name}@${version} is not in the graph`);
     return found;
   }

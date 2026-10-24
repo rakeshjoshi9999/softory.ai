@@ -3,6 +3,7 @@ import { graphSync } from './graph.js';
 import { verifyPackage } from './attest.js';
 import { readProvenance, renderProvenance } from './provenance.js';
 import { impact, renderMarkdown } from './impact.js';
+import { recall } from './recall.js';
 import { DEFAULT_REGISTRY, release } from './release.js';
 import { validateFile } from './validate.js';
 
@@ -27,6 +28,18 @@ if (command === 'impact' && path) {
   } catch (e) {
     console.error((e as Error).message);
     process.exit(2);
+  }
+}
+
+if (command === 'recall' && path) {
+  try {
+    const i = process.argv.indexOf('--reason');
+    const r = await recall(path, { reason: i > 0 ? (process.argv[i + 1] ?? '') : '' });
+    console.log(`recalled ${r.package}@${r.version}; opened ${r.issues.length} issue(s)${r.products.length ? `: ${r.products.join(', ')}` : ''}`);
+    process.exit(0);
+  } catch (e) {
+    console.error((e as Error).message);
+    process.exit(1);
   }
 }
 
@@ -77,7 +90,7 @@ if (command === 'assemble' && path) {
 }
 
 if (command !== 'validate' || !path) {
-  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml> | factory graph sync | factory impact <material-dir> [--json]');
+  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml> | factory graph sync | factory recall <package>@<version> --reason <text> | factory impact <material-dir> [--json]');
   process.exit(2);
 }
 

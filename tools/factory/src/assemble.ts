@@ -6,6 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import semver from 'semver';
 import { parse } from 'yaml';
+import { RECALL_PREFIX } from './recall.js';
 import { DEFAULT_REGISTRY } from './release.js';
 import { validateFile } from './validate.js';
 
@@ -46,11 +47,12 @@ function registryUrl(registry: string, pkg: string): string {
 export async function resolvePackage(registry: string, pkg: string, range: string): Promise<Omit<Resolved, 'alias'>> {
   const res = await fetch(registryUrl(registry, pkg));
   if (!res.ok) throw new Error(`${pkg}: registry answered ${res.status} (is ${registry} running and released?)`);
-  const doc = (await res.json()) as { versions?: Record<string, { dist: { tarball: string; integrity?: string } }> };
+  const doc = (await res.json()) as { versions?: Record<string, { deprecated?: string; dist: { tarball: string; integrity?: string } }> };
   const versions = Object.keys(doc.versions ?? {});
   const version = semver.maxSatisfying(versions, semver.validRange(range) ? range : `^${range}`);
   const entry = version ? doc.versions?.[version] : undefined;
   if (!version || !entry) throw new Error(`${pkg}: no published version satisfies "${range}" (have: ${versions.join(', ') || 'none'})`);
+  if (entry.deprecated?.startsWith(RECALL_PREFIX)) throw new Error(`${pkg}@${version} was recalled: ${entry.deprecated.slice(RECALL_PREFIX.length)}. Release a fixed version and update the consumes range.`);
   return { name: pkg, version, tarball: entry.dist.tarball, integrity: entry.dist.integrity };
 }
 
