@@ -36,3 +36,12 @@ describe('pipeline plan', () => {
     expect(() => signCommand('a b')).toThrow(/invalid file/);
   });
 });
+
+import { scanCommand } from '../src/plan.js';
+describe('scanCommand', () => {
+  it('builds Trivy argv and rejects option-looking targets', () => {
+    expect(scanCommand('sbom', 'sbom.spdx.json')).toEqual(['trivy', 'sbom', '--format', 'json', '--quiet', 'sbom.spdx.json']);
+    expect(scanCommand('image', 'registry:5000/orders@sha256:abc')[1]).toBe('image');
+    expect(() => scanCommand('image', '--oops')).toThrow(/invalid scan target/);
+  });
+});

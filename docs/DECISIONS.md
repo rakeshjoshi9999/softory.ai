@@ -82,3 +82,6 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-23 · Version lifecycle state lives in the MaterialVersion node's `props` (`state`, `reason`); absent means `released`, and provenance re-ingest never overwrites it · no schema change, state survives re-ingest · #18
 - 2026-10-23 · Recall marks the registry with `npm deprecate` message `RECALLED: <reason>`; `assemble` refuses when the highest satisfying version carries that prefix instead of silently falling back to an older one · explicit, the consumer must choose a fixed range · #18
 - 2026-10-23 · Recall order: graph state first (fails fast on unknown version), then registry, then one GitHub issue per distinct product (REST via fetch, no new dependency) · #18
+- 2026-10-24 · Scanner is Trivy `aquasec/trivy:0.58.1` (Apache-2.0) in the Dagger `scan` function; findings are parsed from Trivy JSON in `tools/factory/src/scan.ts`, so tests use a fixture report and need no Trivy · no new npm dependency · #21
+- 2026-10-24 · Any CRITICAL finding recalls the package, reason = sorted CVE ids; `--dry-run` reads the graph but changes no state, registry or issues · #21
+- 2026-10-24 · Nightly scan walks the SBOMs in the attestation store; workflow provided as `tools/factory/ci/nightly-scan.yml` because `.github/workflows/` is off-limits · #21

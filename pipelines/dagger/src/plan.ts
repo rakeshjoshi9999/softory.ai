@@ -89,3 +89,12 @@ export function signImageCommand(ref: string): string[] {
   if (!/^[A-Za-z0-9._:\/-]+@sha256:[0-9a-f]{64}$/.test(ref)) throw new Error(`image reference must be pinned by digest: ${ref}`);
   return ['cosign', 'sign', '--yes', '--key', 'env://COSIGN_KEY', ref];
 }
+
+const TRIVY_TARGET = /^[A-Za-z0-9._:\/@-]+$/;
+
+/** Trivy argv: JSON findings for an SBOM file or an image reference (never an option-looking target). */
+export function scanCommand(kind: 'sbom' | 'image', target: string): string[] {
+  if (!TRIVY_TARGET.test(target) || target.startsWith('-')) throw new Error(`invalid scan target: ${target}`);
+  if (kind !== 'sbom' && kind !== 'image') throw new Error(`unknown scan kind: ${kind}`);
+  return ['trivy', kind, '--format', 'json', '--quiet', target];
+}

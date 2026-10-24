@@ -66,3 +66,14 @@ describe('recall', () => {
     await expect(recall('@factory/orders-api-nest@1.0.0', { reason: ' ' })).rejects.toThrow(/--reason/);
   });
 });
+
+describe('recall dry run', () => {
+  it('reads the graph but writes nothing', async () => {
+    const { impl, calls } = fakeFetch(consumers);
+    const deprecated: string[][] = [];
+    const r = await recall(ang, { reason: 'CVE-1', dryRun: true, graphUrl: 'http://graph', fetchImpl: impl, deprecate: (...a) => void deprecated.push(a) });
+    expect(r.products).toEqual(['orders-admin-ui', 'orders-ui']);
+    expect(calls.map((c) => c.method)).toEqual(['GET']);
+    expect(deprecated).toEqual([]);
+  });
+});

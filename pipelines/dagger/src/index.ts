@@ -1,8 +1,9 @@
 import { dag, Container, Directory, File, Secret, func, object } from '@dagger.io/dagger';
-import { blockCommand, ciCommands, imageSpec, productBuildCommand, sbomCommand, signCommand, signImageCommand } from './plan.js';
+import { blockCommand, ciCommands, imageSpec, productBuildCommand, scanCommand, sbomCommand, signCommand, signImageCommand } from './plan.js';
 
 const NODE_IMAGE = 'node:22-bookworm';
 const SYFT_IMAGE = 'anchore/syft:v1.18.1';
+const TRIVY_IMAGE = 'aquasec/trivy:0.58.1';
 const COSIGN_IMAGE = 'gcr.io/projectsigstore/cosign:v2.4.1';
 
 @object()
@@ -98,5 +99,15 @@ export class Factory {
       .withExec(signImageCommand(ref))
       .sync();
     return ref;
+  }
+
+  /** Trivy findings as JSON for an SBOM file (no network image needed) or, when `image` is set, a registry image. */
+  @func()
+  scan(sbom?: File, image?: string): File {
+    if ((sbom === undefined) === (image === undefined)) throw new Error('scan needs exactly one of sbom or image');
+    let ctr = dag.container().from(TRIVY_IMAGE).withWorkdir('/in');
+    if (sbom !== undefined) ctr = ctr.withMountedFile('/in/sbom.spdx.json', sbom);
+    const argv = sbom !== undefined ? scanCommand('sbom', 'sbom.spdx.json') : scanCommand('image', image!);
+    return ctr.withExec(argv, { redirectStdout: '/out/findings.json' }).file('/out/findings.json');
   }
 }
