@@ -156,5 +156,19 @@
       "P1-09"
     ],
     "labels": []
+  },
+  {
+    "id": "P1-11",
+    "title": "Fix factory release attestation path so the Gate 1 demo runs on a fresh checkout",
+    "goal": "Get `scripts/gate1-demo.sh` working again on a fresh checkout so Gate 1 can be closed with fresh evidence.",
+    "acceptance": [
+      "`attest.ts` resolves the attestation directory to an absolute path and creates it before `npm pack`; a unit test with a relative store path fails before the fix and passes after",
+      "On a fresh clone, `bash scripts/gate1-demo.sh` exits 0 and prints both the additive-change and the breaking-change outcomes",
+      "After the demo, `git status --short` is empty",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "tools/factory/src/attest.ts, release.ts if needed, and their tests.",
+    "blockedBy": [],
+    "labels": []
   }
 ]
