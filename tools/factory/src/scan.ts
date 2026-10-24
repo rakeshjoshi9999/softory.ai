@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { DEFAULT_GRAPH_URL } from './graph.js';
+import { DEFAULT_GRAPH_URL } from './graph-client.js';
 import { parsePackageRef, recall, type RecallOptions, type RecallResult } from './recall.js';
 
 export interface Finding {

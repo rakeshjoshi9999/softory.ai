@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { DEFAULT_GRAPH_URL } from './graph.js';
+import { graphClient } from './graph-client.js';
 import { DEFAULT_REGISTRY } from './release.js';
 
 /** Prefix `npm deprecate` carries for recalled versions; `assemble` refuses these. */
@@ -48,14 +48,11 @@ const npmDeprecate = (pkg: string, message: string, registry: string) =>
 export async function recall(ref: string, opts: RecallOptions): Promise<RecallResult> {
   if (!opts.reason.trim()) throw new Error('a recall needs --reason');
   const { pkg, material, version } = parsePackageRef(ref);
-  const graph = (opts.graphUrl ?? process.env['FACTORY_GRAPH_URL'] ?? DEFAULT_GRAPH_URL).replace(/\/$/, '');
   const registry = opts.registry ?? process.env['FACTORY_REGISTRY'] ?? DEFAULT_REGISTRY;
   const f = opts.fetchImpl ?? fetch;
-  const base = `${graph}/materials/${encodeURIComponent(material)}/versions/${encodeURIComponent(version)}`;
+  const graph = graphClient(opts.graphUrl, f);
 
-  const consumersRes = await f(`${base}/consumers`);
-  if (!consumersRes.ok) throw new Error(`graph service answered ${consumersRes.status} listing consumers`);
-  const consumers = (await consumersRes.json()) as { product: string; package: string }[];
+  const consumers = await graph.listConsumers(material, version);
   // the graph lists consumers of every package of the material version; only this package's are affected
   const products = [...new Set(consumers.filter((c) => c.package === `${pkg}@${version}`).map((c) => c.product))].sort();
 
@@ -65,8 +62,7 @@ export async function recall(ref: string, opts: RecallOptions): Promise<RecallRe
   }
   // registry first: a half-done recall must never leave the graph saying "recalled" while the registry still serves the version
   (opts.deprecate ?? npmDeprecate)(`${pkg}@${version}`, `${RECALL_PREFIX}${opts.reason}`, registry);
-  const set = await f(`${base}/state`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ state: 'recalled', reason: opts.reason }) });
-  if (!set.ok) throw new Error(`graph service answered ${set.status} for ${material}@${version}: ${await set.text()}`);
+  await graph.setVersionState(material, version, { state: 'recalled', reason: opts.reason });
 
   const repo = opts.repo ?? process.env['FACTORY_RECALL_REPO'] ?? process.env['GITHUB_REPOSITORY'];
   const token = opts.token ?? process.env['GITHUB_TOKEN'];
