@@ -12,6 +12,8 @@ export interface RecallOptions {
   /** `owner/repo` that receives one issue per affected product. */
   repo?: string;
   token?: string;
+  /** Compute the affected products and issues but change nothing (graph state, registry, GitHub). */
+  dryRun?: boolean;
   fetchImpl?: typeof fetch;
   deprecate?: (pkg: string, message: string, registry: string) => void;
 }
@@ -51,7 +53,7 @@ export async function recall(ref: string, opts: RecallOptions): Promise<RecallRe
   const f = opts.fetchImpl ?? fetch;
   const base = `${graph}/materials/${encodeURIComponent(material)}/versions/${encodeURIComponent(version)}`;
 
-  const set = await f(`${base}/state`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ state: 'recalled', reason: opts.reason }) });
+  const set = opts.dryRun ? { ok: true, status: 200, text: async () => '' } : await f(`${base}/state`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ state: 'recalled', reason: opts.reason }) });
   if (!set.ok) throw new Error(`graph service answered ${set.status} for ${material}@${version}: ${await set.text()}`);
   const consumersRes = await f(`${base}/consumers`);
   if (!consumersRes.ok) throw new Error(`graph service answered ${consumersRes.status} listing consumers`);
@@ -59,6 +61,10 @@ export async function recall(ref: string, opts: RecallOptions): Promise<RecallRe
   // the graph lists consumers of every package of the material version; only this package's are affected
   const products = [...new Set(consumers.filter((c) => c.package === `${pkg}@${version}`).map((c) => c.product))].sort();
 
+  if (opts.dryRun) {
+    const planned = products.map((product) => ({ product, payload: issuePayload(product, pkg, version, opts.reason) }));
+    return { package: pkg, material, version, products, issues: planned };
+  }
   (opts.deprecate ?? npmDeprecate)(`${pkg}@${version}`, `${RECALL_PREFIX}${opts.reason}`, registry);
 
   const repo = opts.repo ?? process.env['FACTORY_RECALL_REPO'] ?? process.env['GITHUB_REPOSITORY'];

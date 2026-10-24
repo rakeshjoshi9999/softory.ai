@@ -4,6 +4,7 @@ import { verifyPackage } from './attest.js';
 import { readProvenance, renderProvenance } from './provenance.js';
 import { impact, renderMarkdown } from './impact.js';
 import { recall } from './recall.js';
+import { readReport, scanAll, scanPackage, trivySbom } from './scan.js';
 import { DEFAULT_REGISTRY, release } from './release.js';
 import { validateFile } from './validate.js';
 
@@ -36,6 +37,23 @@ if (command === 'recall' && path) {
     const i = process.argv.indexOf('--reason');
     const r = await recall(path, { reason: i > 0 ? (process.argv[i + 1] ?? '') : '' });
     console.log(`recalled ${r.package}@${r.version}; opened ${r.issues.length} issue(s)${r.products.length ? `: ${r.products.join(', ')}` : ''}`);
+    process.exit(0);
+  } catch (e) {
+    console.error((e as Error).message);
+    process.exit(1);
+  }
+}
+
+if (command === 'scan' && path) {
+  try {
+    const dryRun = process.argv.includes('--dry-run');
+    const i = process.argv.indexOf('--report');
+    const j = process.argv.indexOf('--sbom');
+    const outcomes =
+      path === 'all'
+        ? await scanAll(process.env['FACTORY_ATTESTATION_STORE'] ?? 'dist/attestations', { dryRun })
+        : [await scanPackage(path, i > 0 ? readReport(process.argv[i + 1] ?? '') : trivySbom(process.argv[j + 1] ?? ''), { dryRun })];
+    for (const o of outcomes) console.log(`${o.ref}: ${o.findings.length} finding(s)${o.recall ? `; ${dryRun ? 'would recall' : 'recalled'} (${o.recall.products.length} product(s))` : ''}`);
     process.exit(0);
   } catch (e) {
     console.error((e as Error).message);
@@ -90,7 +108,7 @@ if (command === 'assemble' && path) {
 }
 
 if (command !== 'validate' || !path) {
-  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml> | factory graph sync | factory recall <package>@<version> --reason <text> | factory impact <material-dir> [--json]');
+  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml> | factory graph sync | factory recall <package>@<version> --reason <text> | factory impact <material-dir> [--json] | factory scan <package>@<version>|all [--report <trivy.json>|--sbom <file>] [--dry-run]');
   process.exit(2);
 }
 

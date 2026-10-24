@@ -1,0 +1,22 @@
+# Copy to .github/workflows/nightly-scan.yml (workflows are off-limits for the builder).
+# Needs: the attestation store restored at dist/attestations, FACTORY_GRAPH_URL, FACTORY_REGISTRY, trivy installed.
+name: nightly-scan
+on:
+  schedule: [{ cron: '17 2 * * *' }]
+  workflow_dispatch: {}
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: aquasecurity/setup-trivy@v0.2.2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm factory scan all
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FACTORY_RECALL_REPO: ${{ github.repository }}
+          FACTORY_GRAPH_URL: ${{ vars.FACTORY_GRAPH_URL }}
+          FACTORY_REGISTRY: ${{ vars.FACTORY_REGISTRY }}

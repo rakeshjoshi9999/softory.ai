@@ -1,0 +1,1 @@
+{"SchemaVersion":2,"ArtifactType":"spdx","Results":[{"Target":"orders-api-angular.sbom.spdx.json","Vulnerabilities":[{"VulnerabilityID":"CVE-2021-44228","PkgName":"log4j-core","Severity":"CRITICAL"},{"VulnerabilityID":"CVE-2020-0001","PkgName":"left-pad","Severity":"LOW"}]}]}
