@@ -14,7 +14,7 @@
         "{workspaceRoot}/dist/products/graph-service"
       ],
       "options": {
-        "command": "tsc -p products/graph-service/tsconfig.app.json",
+        "command": "tsc -p products/graph-service/tsconfig.app.json && rm -rf dist/products/graph-service/migrations && cp -r products/graph-service/migrations dist/products/graph-service/migrations",
         "cwd": "{workspaceRoot}"
       }
     },
