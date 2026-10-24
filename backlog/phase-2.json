@@ -11,7 +11,9 @@
     ],
     "scope": "pipelines/dagger and the CI workflow call site.",
     "blockedBy": [],
-    "labels": ["needs-human"]
+    "labels": [
+      "needs-human"
+    ]
   },
   {
     "id": "P2-02",
@@ -24,7 +26,9 @@
       "Test keys live only in test fixtures; real keys come from secrets and are never committed"
     ],
     "scope": "pipelines/dagger, tools/ release and verify commands.",
-    "blockedBy": ["P2-01"],
+    "blockedBy": [
+      "P2-01"
+    ],
     "labels": []
   },
   {
@@ -38,7 +42,9 @@
       "JSON Schema test validates the statement shape"
     ],
     "scope": "tools/ and pipelines/dagger.",
-    "blockedBy": ["P2-02"],
+    "blockedBy": [
+      "P2-02"
+    ],
     "labels": []
   },
   {
@@ -53,7 +59,9 @@
       "Integration tests run against PostgreSQL via Testcontainers (or a docker compose service in CI)"
     ],
     "scope": "products/graph-service, materials for its API, docker compose.",
-    "blockedBy": ["P2-03"],
+    "blockedBy": [
+      "P2-03"
+    ],
     "labels": []
   },
   {
@@ -66,7 +74,9 @@
       "Their lockfiles are ingested into the graph service by `pnpm factory graph sync`"
     ],
     "scope": "products/ and tools/ graph sync command.",
-    "blockedBy": ["P2-04"],
+    "blockedBy": [
+      "P2-04"
+    ],
     "labels": []
   },
   {
@@ -80,8 +90,12 @@
       "Tests cover a patch change with zero failures and a breaking change that lists all three consumers"
     ],
     "scope": "tools/ impact command and one CI job.",
-    "blockedBy": ["P2-05"],
-    "labels": ["needs-human"]
+    "blockedBy": [
+      "P2-05"
+    ],
+    "labels": [
+      "needs-human"
+    ]
   },
   {
     "id": "P2-07",
@@ -93,7 +107,9 @@
       "docs/architecture.md explains how releases propagate"
     ],
     "scope": "renovate.json, docs.",
-    "blockedBy": ["P2-05"],
+    "blockedBy": [
+      "P2-05"
+    ],
     "labels": []
   },
   {
@@ -107,7 +123,9 @@
       "Tests cover recall, refusal and the issue payloads (GitHub API mocked)"
     ],
     "scope": "tools/, products/graph-service.",
-    "blockedBy": ["P2-04"],
+    "blockedBy": [
+      "P2-04"
+    ],
     "labels": []
   },
   {
@@ -121,7 +139,9 @@
       "Recipes generate the thin chart for new products"
     ],
     "scope": "pipelines/dagger, deploy/charts, recipes/.",
-    "blockedBy": ["P2-01"],
+    "blockedBy": [
+      "P2-01"
+    ],
     "labels": []
   },
   {
@@ -135,8 +155,12 @@
       "A CI job runs this end to end on kind (needs-human: edits .github/ and infrastructure)"
     ],
     "scope": "deploy/, scripts/, one CI job.",
-    "blockedBy": ["P2-09"],
-    "labels": ["needs-human"]
+    "blockedBy": [
+      "P2-09"
+    ],
+    "labels": [
+      "needs-human"
+    ]
   },
   {
     "id": "P2-11",
@@ -148,7 +172,10 @@
       "Test with a fixture SBOM containing a known critical CVE produces a recall in dry-run mode"
     ],
     "scope": "pipelines/dagger, tools/.",
-    "blockedBy": ["P2-08", "P2-09"],
+    "blockedBy": [
+      "P2-08",
+      "P2-09"
+    ],
     "labels": []
   },
   {
@@ -162,7 +189,252 @@
       "PROGRESS.md records the evidence and the planner opens `Gate 2 review` for a human"
     ],
     "scope": "scripts/, PROGRESS.md.",
-    "blockedBy": ["P2-06", "P2-07", "P2-10", "P2-11"],
+    "blockedBy": [
+      "P2-06",
+      "P2-07",
+      "P2-10",
+      "P2-11",
+      "P2-13",
+      "P2-14",
+      "P2-15",
+      "P2-16",
+      "P2-17",
+      "P2-18",
+      "P2-19",
+      "P2-20",
+      "P2-21",
+      "P2-22",
+      "P2-23",
+      "P2-24",
+      "P2-25",
+      "P2-26",
+      "P2-27"
+    ],
     "labels": []
+  },
+  {
+    "id": "P2-13",
+    "title": "Fix vulnerability-scan review findings from PR #72",
+    "goal": "Fix the four blocking problems from the PR #72 review; P2-11 merged before they were addressed.",
+    "acceptance": [
+      "parseTrivy treats a report without Results as no findings",
+      "scan all skips versions already recalled",
+      "one package failure does not stop the run; missing store fails loudly",
+      "images scanned; recall order registry first, then graph state",
+      "nightly-scan.yml declares permissions and registry auth",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "tools/factory/src/scan.ts, recall.ts, tools/factory/ci/nightly-scan.yml.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P2-14",
+    "title": "Assembly security: fail-closed integrity and safe tarball extraction",
+    "goal": "Fix the two blocking security findings from the PR #60 review (P1-09), which merged unfixed.",
+    "acceptance": [
+      "`factory assemble` refuses a package version whose registry metadata has no usable integrity: verify `sha512-` integrity, else `dist.shasum` (sha1), else throw; test proves a version with no integrity is rejected",
+      "Before extraction the tarball is listed and rejected if it contains symlinks, hardlinks, absolute paths or `..` segments; extraction uses `--no-same-owner`; test with a crafted malicious tarball proves rejection",
+      "The tarball URL must have the same origin as the configured registry; test proves a foreign origin is rejected",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "tools/factory/src/assemble.ts and its tests.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P2-15",
+    "title": "Sign exactly the bytes that are published; no unsigned release possible",
+    "goal": "Fix blocking finding 1 from the PR #63 review (P2-02), which merged unfixed.",
+    "acceptance": [
+      "`factory release` validates the signing key before anything is packed or published; a bad key fails with nothing published (test)",
+      "Each package is packed once into the attestation store; the SBOM, signature and provenance are made from that tarball; that exact file is published with `npm publish <tarball>` (test asserts signed bytes equal published bytes)",
+      "If attestation fails, nothing is published; a re-run of a version that is published but unsigned is detected and reported instead of silently skipped (test)",
+      "`scripts/gate1-demo.sh` still passes",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "tools/factory/src/release.ts, attest.ts, provenance.ts and their tests.",
+    "blockedBy": [
+      "P1-11"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P2-16",
+    "title": "Decide where attestations live (ADR for a human)",
+    "goal": "Resolve finding 2 from the PR #63 review: the issue asked for .sig and SBOM in the registry storage, but they are written to a filesystem store that CI and other machines cannot reach.",
+    "acceptance": [
+      "`docs/adr/0001-attestation-storage.md` compares at least: filesystem store (today), companion npm package per release, OCI artifacts in Harbor/zot via `oras`, and a small sidecar service; for each: how `factory verify`, the nightly scan and the graph find attestations, effort, and offline/air-gapped fit",
+      "It recommends one option and lists the follow-up tasks it implies",
+      "No code changes in this task; the PR is labelled needs-human so a human records the decision"
+    ],
+    "scope": "docs/adr/ only.",
+    "blockedBy": [],
+    "labels": [
+      "needs-human"
+    ]
+  },
+  {
+    "id": "P2-17",
+    "title": "Retro-review the Phase 2 PRs that merged without review",
+    "goal": "PRs #62 (P2-01 Dagger), #66 (P2-09 images and Helm), #67 (P2-10 kind GitOps) and #69 (P2-06 impact) merged with no reviewer run. Review them now and file what is wrong.",
+    "acceptance": [
+      "Each of the four merged diffs is reviewed against its issue's acceptance criteria, CLAUDE.md, contracts, tests and security, using the `reviewer` subagent",
+      "Every blocking problem found becomes its own issue `[P2-nn]` (next free ID) labelled `ready` and `phase-2`, with testable acceptance criteria, and is added to the Blocked by list of `[P2-12]`",
+      "A summary comment is posted on each of the four PRs (no findings is a valid outcome)",
+      "No code changes in this task"
+    ],
+    "scope": "Review and issue creation only.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P2-18",
+    "title": "Make the Dagger pipeline module actually run",
+    "goal": "P2-01 was never run against a Dagger engine; its first real run in the `dagger` CI job (PR #73) failed.",
+    "acceptance": [
+      "Read the failing `dagger` job log from the latest CI run on main (or reproduce with `dagger call -m pipelines/dagger ci --src=. --base=origin/main` where Docker exists) and fix `pipelines/dagger/src` until the job passes",
+      "`lint`, `test` and `build` functions each run end to end in the engine; the module's unit tests still pass",
+      "PR notes say whether the `verify` job can now switch to `dagger call ci` (the switch itself is a needs-human workflow change)",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "pipelines/dagger only.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P2-19",
+    "title": "graph-service runs from its built output and as a container",
+    "goal": "Fix the follow-up from P2-05: the built graph-service cannot find `migrations/` (`../../migrations` from dist), so it only runs from the source layout.",
+    "acceptance": [
+      "Migrations are copied into the build output (Nx assets) or embedded, and resolved relative to the built file; `node dist/products/graph-service/main.js` applies migrations against a test database (test)",
+      "The Dagger `image` function builds a graph-service image that starts and answers its health endpoint (or, without Docker, a test that runs the built output from a temp directory outside the repo)",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "products/graph-service (src/ext and project config), pipelines/dagger if needed.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P2-20",
+    "title": "Graph-service API as a TypeSpec material",
+    "goal": "Follow-up from P2-04: the graph API is hand-written in `src/ext/`. The factory should build its own services from materials.",
+    "acceptance": [
+      "`materials/graph-api/` defines the existing endpoints (ingest provenance, ingest lockfile, consumers, version state) in TypeSpec with a valid material.yaml; Spectral and oasdiff pass",
+      "graph-service implements the generated nest-server controllers; hand-written logic stays in `src/ext/`",
+      "`tools/factory` calls graph-service through the generated client instead of ad-hoc fetch calls where practical",
+      "Existing graph and recall tests pass unchanged in behaviour",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "materials/graph-api, products/graph-service, tools/factory graph callers.",
+    "blockedBy": [
+      "P2-19"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P2-21",
+    "title": "Charts for every product and a passing kind end-to-end run",
+    "goal": "Follow-up from P2-09/P2-10: only two products have a committed `chart/`, the ApplicationSet path differs from the issue wording, and the kind scripts were never run on a cluster.",
+    "acceptance": [
+      "Every product under `products/` has a `chart/` generated by its recipe (orders-ui, orders-service and graph-service included); `scripts/chart-check.sh` passes in the `charts` CI job",
+      "The ApplicationSet path and the architecture doc agree (document `products/*/chart`)",
+      "The manual `platform-e2e` workflow passes: platform up, unsigned image rejected; fix scripts until it does (a human triggers the workflow run and links the result in the PR)",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "products/*/chart, recipes/ chart output, deploy/platform, scripts/platform-*.sh, docs.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P2-22",
+    "title": "Propagation without manual steps: factory propagate",
+    "goal": "Gate 2 needs a spec change to reach consumers with no manual steps, but Renovate needs a real platform and re-assembly after a lockfile bump is not automated (P2-07 follow-up).",
+    "acceptance": [
+      "`factory propagate <material>@<version>` finds consumers (graph, else lockfiles), and for each: bumps the pin, re-runs `factory assemble`, runs the product's tests, and opens a PR via the GitHub REST API labelled `needs-review` (dry-run flag for tests)",
+      "Patch bumps whose tests pass are labelled `claude-approved` so auto-merge applies; minor and major bumps are not",
+      "Running it twice opens no duplicate PRs (test)",
+      "Renovate config stays for real deployments; docs/architecture.md explains when each is used",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "tools/factory, docs.",
+    "blockedBy": [
+      "P2-14"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P2-23",
+    "title": "Impact report runs the dry-run assembly in CI",
+    "goal": "Follow-up from P2-06: in CI no registry is reachable, so the impact report skips the dry-run assembly and only checks ranges and contract tests.",
+    "acceptance": [
+      "`tools/factory/ci/impact.yml` starts Verdaccio as a service container, releases the changed material's current and proposed versions into it, and runs the impact report with the dry-run assembly enabled",
+      "A fixture PR scenario (test) shows the dry-run section reported as run, not skipped",
+      "The workflow change is provided in `tools/factory/ci/` for a human to copy (needs-human)"
+    ],
+    "scope": "tools/factory/src/impact.ts, tools/factory/ci/impact.yml.",
+    "blockedBy": [],
+    "labels": [
+      "needs-human"
+    ]
+  },
+  {
+    "id": "P2-24",
+    "title": "Live HTTP contract tests for consumer products",
+    "goal": "Follow-up from P2-05: consumer contract tests compare lockfile pins instead of calling orders-service over HTTP.",
+    "acceptance": [
+      "orders-ui, orders-admin-ui and orders-report-worker each have a contract test that starts orders-service (or its generated Nest base with fixtures) and calls it through the emitted client over real HTTP",
+      "A breaking change in orders-api makes at least one consumer contract test fail (test with a fixture spec)",
+      "The tests run in CI under `nx affected`",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "products/*/src/ext tests and test helpers.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P2-25",
+    "title": "Recall is idempotent",
+    "goal": "Non-blocking finding from the PR #71 review: re-running `factory recall` opens duplicate issues.",
+    "acceptance": [
+      "Before opening a recall issue for a product, `factory recall` searches open issues labelled `recall` for the same package and version and skips existing ones (test)",
+      "Re-running a recall on an already-recalled version changes nothing and exits 0 with a clear message (test)",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "tools/factory/src/recall.ts and tests.",
+    "blockedBy": [
+      "P2-13"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P2-26",
+    "title": "CI hardening: pinned checksums and safe expressions",
+    "goal": "Non-blocking findings from the PR #73 review.",
+    "acceptance": [
+      "kubeconform and Dagger downloads in `ci.yml` are verified against pinned SHA-256 checksums; Dagger is installed from a pinned release archive, not `curl | sh`",
+      "`impact.yml` passes `github.base_ref` through `env:` instead of interpolating it into the script",
+      "Changes are proposed in `tools/factory/ci/` (or as a PR touching `.github/workflows/` labelled needs-human) for a human to apply"
+    ],
+    "scope": "CI workflow files only.",
+    "blockedBy": [],
+    "labels": [
+      "needs-human"
+    ]
+  },
+  {
+    "id": "P2-27",
+    "title": "Builder claims an issue before working on it",
+    "goal": "Two builder runs once implemented the same issue (PRs #50 and #51). Make the claim atomic and visible.",
+    "acceptance": [
+      "`prompts/builder.md`: before creating a branch, the builder adds `in-progress` and a comment `claimed by run <timestamp>`; it then re-reads the issue and backs off if another claim comment is older than its own",
+      "Claims with no commits for 3 hours are treated as stale and may be taken over (documented)",
+      "PR labelled needs-human (it changes how the loops behave)"
+    ],
+    "scope": "prompts/builder.md only.",
+    "blockedBy": [],
+    "labels": [
+      "needs-human"
+    ]
   }
 ]
