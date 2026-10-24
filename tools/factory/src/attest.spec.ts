@@ -1,9 +1,9 @@
 import { generateKeyPairSync } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { attest, sbomFor, signBlob, tarballName, verifyBlob, verifyPackage } from './attest.js';
 
@@ -20,6 +20,20 @@ function pkgDir() {
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: '@factory/demo-nest', version: '1.2.3', license: 'MIT', dependencies: { rxjs: '^7' }, files: ['src'] }));
   return dir;
 }
+
+describe('attest with a relative store', () => {
+  it('writes into the store relative to the working directory, not the package directory', () => {
+    const pkg = pkgDir();
+    const store = relative(process.cwd(), mkdtempSync(join(process.cwd(), 'tmp-attest-rel-')));
+    try {
+      const out = attest(pkg, store, keys().priv);
+      expect(existsSync(out.tarball)).toBe(true);
+      expect(existsSync(join(pkg, store))).toBe(false);
+    } finally {
+      rmSync(store, { recursive: true, force: true });
+    }
+  });
+});
 
 describe('sign / verify', () => {
   it('accepts the signed bytes, rejects other bytes and other keys', () => {

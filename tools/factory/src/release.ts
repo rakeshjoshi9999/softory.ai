@@ -76,7 +76,7 @@ export function release(material: string, opts: { root?: string; registry?: stri
   const root = opts.root ?? '.';
   const signingKey = opts.signingKey ?? process.env['FACTORY_SIGNING_KEY'];
   if (!signingKey) throw new Error('FACTORY_SIGNING_KEY (PEM, ECDSA P-256 PKCS#8) is required: every release is signed');
-  const store = opts.store ?? process.env['FACTORY_ATTESTATION_STORE'] ?? join(root, 'dist', 'attestations');
+  const store = resolve(root, opts.store ?? process.env['FACTORY_ATTESTATION_STORE'] ?? join('dist', 'attestations'));
   const registry = opts.registry ?? process.env['FACTORY_REGISTRY'] ?? DEFAULT_REGISTRY;
   const pkgs = packagesFor(material, root);
   if (pendingChangesets(root)) {
