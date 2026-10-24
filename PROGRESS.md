@@ -17,6 +17,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
+- #81 P2-17 retro-review: done, PR open awaiting review; filed #98-#110 (P2-28..P2-40) and added them to #22's Blocked by
 - #80 P2-16 attestation storage ADR: PR open, awaiting a human decision (needs-human)
 - #79 P2-15: merged (PR #96)
 - #21 P2-11 vulnerability scan -> recall: PR open, awaiting review
@@ -97,3 +98,4 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - 2026-10-24 · #79 P2-15 · release validates key first, packs once, attests the tarball (SBOM/sig/provenance) for all packages, then `npm publish <tarball>`; published-but-unattested versions throw; 5 new tests; gate1-demo passes; `nx affected -t lint test build` green · branch claude/gifted-mendel-v4gnbs
 - 2026-10-24 · builder · synced PR #94 (#74) with main (PROGRESS/DECISIONS kept both sides, affected green); then #78 P2-14 · assemble fails closed on missing integrity (sha512, else shasum), foreign-origin tarball URL, unsafe tarballs (links/abs/`..`) + `--no-same-owner`; 3 new tests (fail without fix); `nx affected -t lint test build` green · branch claude/78-assembly-security
 - 2026-10-24 · #80 P2-16 · docs/adr/0001-attestation-storage.md compares 4 options, recommends companion npm package; closed stale #79 (PR #96 merged); docs only · branch claude/80-attestation-adr
+- 2026-10-24 · #81 P2-17 · reviewer subagent reviewed merged PRs #62, #66, #67, #69: 13 blocking problems filed as #98-#110 (P2-28..P2-40, #110 needs-human), summary comment on each PR, #22 Blocked by extended; backlog/phase-2.json not updated (follow-up for planner) · docs only · branch claude/gifted-mendel-c9z1n0
