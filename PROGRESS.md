@@ -17,6 +17,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
+- #83 P2-19 graph-service runs from built output: PR open, awaiting review (Dagger `image` for it not run; see #102/#103)
 - #81 P2-17 retro-review: done, PR open awaiting review; filed #98-#110 (P2-28..P2-40) and added them to #22's Blocked by
 - #80 P2-16 attestation storage ADR: PR open, awaiting a human decision (needs-human)
 - #79 P2-15: merged (PR #96)
@@ -63,6 +64,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-24 · #83 P2-19 · built graph-service resolves `migrations/` next to `ext/` (build target copies them into dist); test runs the real nx build output from a temp dir outside the repo via node main.js: migrates + /health ok, fails without fix; Dagger image untouched (#102/#103 cover its outDir/node_modules); `nx affected -t lint test build` green · branch claude/83-graph-service-built
 - 2026-10-24 · builder · synced PRs #93 and #92 with main (merge, no conflicts, affected lint/test/build green); then #74 P2-13 · parseTrivy tolerates missing Results, scan all skips recalled/collects failures/fails on empty store/scans images, recall order registry then graph, nightly-scan.yml permissions+auth; 5 new tests; `nx affected -t lint test build` green · branch claude/74-scan-review-fixes
 - 2026-10-24 · #76 P1-11 · attest/release resolve the attestation store to an absolute path, relative-store test (fails without fix), recipe `chart/` for orders-ui/orders-service committed so the demo leaves `git status` empty; fresh-checkout `gate1-demo.sh` exits 0; `nx affected -t lint test build` green · branch claude/gifted-mendel-31nljy
 - 2026-10-24 · PR #73 · synced claude/ci-wiring with main (clean merge, nx affected green)
