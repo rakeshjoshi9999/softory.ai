@@ -17,6 +17,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
+- #89 P2-25 recall is idempotent: PR open, needs-review
 - #84 P2-20 graph-service API as a TypeSpec material: PR #114 open, needs-review
 - #86 P2-22 `factory propagate`: PR #116 open, needs-review
 - #87 P2-23 impact dry-run assembly in CI: PR #117 open, needs-human + needs-review
@@ -73,6 +74,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
 - 2026-10-24 · #88 P2-24 · live HTTP contract specs for orders-ui, orders-admin-ui, orders-report-worker against a real orders-service (generated Nest base) via emitted client; breaking fixture spec (getOrder removed) makes ui/admin fail; 6 new tests; lint/test/build green for the 4 products · branch claude/88-live-contract-tests
+- 2026-10-24 · #89 P2-25 · recall skips registry/graph writes when graph state is recalled and dedupes open `recall` issues by title (re-run opens only missing ones); 3 new tests; `nx affected -t lint test build` green · branch claude/89-recall-idempotent
 - 2026-10-24 · planner (2nd run) · #75 Gate 1 review still open (P1-11 merged via #93, all phase-1 issues closed), so phase left at 1 and nothing relabelled; phase-2 queue healthy (#89, #98-#109 ready), no new tasks; no blocked/in-progress issue idle for 24 h (#82/#85/#84/#86/#87/#88 all pushed today); re-run of gate1-demo.sh on main b1c0331 could not complete here: oasdiff v1.32.1 could not be fetched (Go module proxy blocked in this sandbox, and it needs Go >= 1.26), not a code failure · branch claude/planner-2026-10-24
 - 2026-10-24 · #83 P2-19 · built graph-service resolves `migrations/` next to `ext/` (build target copies them into dist); test runs the real nx build output from a temp dir outside the repo via node main.js: migrates + /health ok, fails without fix; Dagger image untouched (#102/#103 cover its outDir/node_modules); `nx affected -t lint test build` green · branch claude/83-graph-service-built
 - 2026-10-24 · builder · synced PRs #93 and #92 with main (merge, no conflicts, affected lint/test/build green); then #74 P2-13 · parseTrivy tolerates missing Results, scan all skips recalled/collects failures/fails on empty store/scans images, recall order registry then graph, nightly-scan.yml permissions+auth; 5 new tests; `nx affected -t lint test build` green · branch claude/74-scan-review-fixes
