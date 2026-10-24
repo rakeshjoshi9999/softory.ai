@@ -85,3 +85,5 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-24 · Scanner is Trivy `aquasec/trivy:0.58.1` (Apache-2.0) in the Dagger `scan` function; findings are parsed from Trivy JSON in `tools/factory/src/scan.ts`, so tests use a fixture report and need no Trivy · no new npm dependency · #21
 - 2026-10-24 · Any CRITICAL finding recalls the package, reason = sorted CVE ids; `--dry-run` reads the graph but changes no state, registry or issues · #21
 - 2026-10-24 · Nightly scan walks the SBOMs in the attestation store; workflow provided as `tools/factory/ci/nightly-scan.yml` because `.github/workflows/` is off-limits · #21
+- 2026-10-24 · `scan all` returns outcomes, skipped and failures; it exits 1 listing every failure after scanning everything; images come from `FACTORY_IMAGES`, and a critical image finding is a failure (no package ref to recall) · one bad package must not hide others · #74
+- 2026-10-24 · Recall order is now consumers lookup, registry `npm deprecate`, graph PUT, issues; a retry after a graph failure is safe because deprecate is idempotent · #74

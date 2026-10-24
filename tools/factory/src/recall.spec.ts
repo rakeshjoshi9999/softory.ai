@@ -33,7 +33,7 @@ describe('recall', () => {
       fetchImpl: impl,
       deprecate: (...a) => void deprecated.push(a),
     });
-    expect(calls[0]).toEqual({ url: 'http://graph/materials/orders-api/versions/1.0.1/state', method: 'PUT', body: { state: 'recalled', reason: 'wrong totals' } });
+    expect(calls.find((c) => c.method === 'PUT')).toEqual({ url: 'http://graph/materials/orders-api/versions/1.0.1/state', method: 'PUT', body: { state: 'recalled', reason: 'wrong totals' } });
     expect(deprecated).toEqual([['@factory/orders-api-angular@1.0.1', 'RECALLED: wrong totals', 'http://reg']]);
     expect(r.products).toEqual(['orders-admin-ui', 'orders-ui']);
     const posts = calls.filter((c) => c.url === 'https://api.github.com/repos/o/r/issues');
@@ -58,11 +58,15 @@ describe('recall', () => {
     expect(calls.every((c) => c.url.startsWith('http://graph'))).toBe(true);
   });
 
-  it('stops before deprecating when the graph rejects the version, and requires a reason', async () => {
-    let deprecated = false;
+  it('deprecates on the registry before the graph is told, so a failed graph update never leaves graph recalled and registry not', async () => {
+    const order: string[] = [];
     const { impl } = fakeFetch(consumers, { graphStatus: 404 });
-    await expect(recall('@factory/orders-api-nest@9.9.9', { reason: 'x', graphUrl: 'http://graph', fetchImpl: impl, deprecate: () => void (deprecated = true) })).rejects.toThrow(/404/);
-    expect(deprecated).toBe(false);
+    const tracked = (async (url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') order.push('graph');
+      return impl(url, init);
+    }) as unknown as typeof fetch;
+    await expect(recall('@factory/orders-api-nest@9.9.9', { reason: 'x', graphUrl: 'http://graph', fetchImpl: tracked, deprecate: () => void order.push('registry') })).rejects.toThrow(/404/);
+    expect(order).toEqual(['registry', 'graph']);
     await expect(recall('@factory/orders-api-nest@1.0.0', { reason: ' ' })).rejects.toThrow(/--reason/);
   });
 });

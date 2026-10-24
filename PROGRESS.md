@@ -27,6 +27,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 - #16 P2-06 impact analysis: draft PR (needs-human: CI workflow)
 
+- #74 P2-13 scan review fixes: PR open, awaiting review
+
 ## Next up
 - #76 P1-11: fix the `factory release` attestation path. `scripts/gate1-demo.sh` currently fails on a fresh checkout of main.
 - #75 Gate 1 review (needs-human): close it as completed once P1-11 merges and the demo passes. The planner then sets the phase to 2.
@@ -57,6 +59,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-24 · builder · synced PRs #93 and #92 with main (merge, no conflicts, affected lint/test/build green); then #74 P2-13 · parseTrivy tolerates missing Results, scan all skips recalled/collects failures/fails on empty store/scans images, recall order registry then graph, nightly-scan.yml permissions+auth; 5 new tests; `nx affected -t lint test build` green · branch claude/74-scan-review-fixes
 - 2026-10-24 · planner · all phase-1 issues closed and no gate issue existed, so opened #75 Gate 1 review (needs-human). Re-ran scripts/gate1-demo.sh on main: it fails on a fresh checkout, so filed #76 [P1-11] (phase-1, ready). No blocked or stale in-progress issues. Phase left at 1 · branch claude/planner-2026-10-24
 - 2026-10-24 · #21 P2-11 · Dagger `scan` (Trivy JSON), `factory scan <pkg@ver>|all [--report|--sbom] [--dry-run]`, `recall --dryRun`, fixture critical-CVE test recalls in dry-run; `nx affected -t lint test build` green · branch claude/21-vuln-scan
 - 2026-10-23 · #18 P2-08 · version state in graph-service (GET/PUT /materials/:n/versions/:v[/state]), `factory recall` (graph state, npm deprecate, one GitHub issue per product), `assemble` refuses RECALLED versions; 6 new tests; `nx affected -t lint test build` green · branch claude/18-recall

@@ -49,11 +49,15 @@ if (command === 'scan' && path) {
     const dryRun = process.argv.includes('--dry-run');
     const i = process.argv.indexOf('--report');
     const j = process.argv.indexOf('--sbom');
-    const outcomes =
-      path === 'all'
-        ? await scanAll(process.env['FACTORY_ATTESTATION_STORE'] ?? 'dist/attestations', { dryRun })
-        : [await scanPackage(path, i > 0 ? readReport(process.argv[i + 1] ?? '') : trivySbom(process.argv[j + 1] ?? ''), { dryRun })];
+    const images = (process.env['FACTORY_IMAGES'] ?? '').split(/[\s,]+/).filter(Boolean);
+    const all = path === 'all' ? await scanAll(process.env['FACTORY_ATTESTATION_STORE'] ?? 'dist/attestations', { dryRun, images }) : undefined;
+    const outcomes = all?.outcomes ?? [await scanPackage(path, i > 0 ? readReport(process.argv[i + 1] ?? '') : trivySbom(process.argv[j + 1] ?? ''), { dryRun })];
     for (const o of outcomes) console.log(`${o.ref}: ${o.findings.length} finding(s)${o.recall ? `; ${dryRun ? 'would recall' : 'recalled'} (${o.recall.products.length} product(s))` : ''}`);
+    for (const ref of all?.skipped ?? []) console.log(`${ref}: already recalled, skipped`);
+    if (all && all.failures.length > 0) {
+      for (const f of all.failures) console.error(`FAILED ${f.ref}: ${f.error}`);
+      process.exit(1);
+    }
     process.exit(0);
   } catch (e) {
     console.error((e as Error).message);
