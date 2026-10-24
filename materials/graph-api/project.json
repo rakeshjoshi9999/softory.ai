@@ -1,0 +1,134 @@
+{
+  "name": "graph-api",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "materials/graph-api",
+  "tags": [
+    "type:material",
+    "scope:graph-api"
+  ],
+  "targets": {
+    "validate": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "{projectRoot}/material.yaml",
+        "{workspaceRoot}/tools/schemas/**/*"
+      ],
+      "cache": true,
+      "options": {
+        "command": "tsx tools/factory/src/cli.ts validate materials/graph-api/material.yaml",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "emit-openapi": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "{projectRoot}/*.tsp",
+        "{projectRoot}/tspconfig.yaml"
+      ],
+      "outputs": [
+        "{projectRoot}/generated/openapi.yaml"
+      ],
+      "cache": true,
+      "options": {
+        "command": "tsp compile materials/graph-api/graph.tsp --config materials/graph-api/tspconfig.yaml",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "lint-openapi": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        "emit-openapi"
+      ],
+      "inputs": [
+        "{projectRoot}/generated/openapi.yaml",
+        "{workspaceRoot}/tools/spectral/**/*",
+        {
+          "dependentTasksOutputFiles": "**/openapi.yaml",
+          "transitive": false
+        }
+      ],
+      "cache": true,
+      "options": {
+        "command": "spectral lint materials/graph-api/generated/openapi.yaml --ruleset tools/spectral/.spectral.yaml --fail-severity warn",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "breaking": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        "emit-openapi"
+      ],
+      "inputs": [
+        "{projectRoot}/generated/openapi.yaml",
+        "{projectRoot}/released/openapi.yaml",
+        "{workspaceRoot}/tools/oasdiff/**/*",
+        {
+          "dependentTasksOutputFiles": "**/openapi.yaml",
+          "transitive": false
+        }
+      ],
+      "cache": true,
+      "options": {
+        "command": "tools/oasdiff/oasdiff.sh breaking materials/graph-api/released/openapi.yaml materials/graph-api/generated/openapi.yaml --fail-on ERR",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/tools/schemas/**/*",
+        "{workspaceRoot}/tools/spectral/**/*",
+        "{workspaceRoot}/tools/oasdiff/**/*"
+      ],
+      "options": {
+        "command": "vitest run --root . materials/graph-api",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "emit-nest-server": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        "emit-openapi"
+      ],
+      "inputs": [
+        "{projectRoot}/generated/openapi.yaml",
+        "{workspaceRoot}/emitters/nest-server/src/**/*",
+        {
+          "dependentTasksOutputFiles": "**/openapi.yaml",
+          "transitive": false
+        }
+      ],
+      "outputs": [
+        "{projectRoot}/generated/nest-server"
+      ],
+      "cache": true,
+      "options": {
+        "command": "tsx -e \"import {emit} from './emitters/nest-server/src/index.ts'; emit({name:'graph-api',type:'api-contract',specPath:'materials/graph-api/generated/openapi.yaml'},{outputDir:'materials/graph-api/generated/nest-server'})\"",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "emit-angular-client": {
+      "executor": "@factory/ts-angular-client:emit",
+      "dependsOn": [
+        "emit-openapi"
+      ],
+      "inputs": [
+        "{projectRoot}/generated/openapi.yaml",
+        {
+          "dependentTasksOutputFiles": "**/openapi.yaml",
+          "transitive": false
+        }
+      ],
+      "outputs": [
+        "{projectRoot}/generated/angular-client"
+      ],
+      "cache": true,
+      "options": {
+        "input": "materials/graph-api/generated/openapi.yaml",
+        "output": "materials/graph-api/generated/angular-client"
+      }
+    }
+  }
+}
