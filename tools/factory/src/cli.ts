@@ -37,6 +37,8 @@ if (command === 'recall' && path) {
   try {
     const i = process.argv.indexOf('--reason');
     const r = await recall(path, { reason: i > 0 ? (process.argv[i + 1] ?? '') : '' });
+    if (r.alreadyRecalled) console.log(`${r.package}@${r.version} was already recalled; registry and graph unchanged`);
+    if (r.existingIssues?.length) console.log(`recall issue already open for: ${r.existingIssues.join(', ')}`);
     console.log(`recalled ${r.package}@${r.version}; opened ${r.issues.length} issue(s)${r.products.length ? `: ${r.products.join(', ')}` : ''}`);
     process.exit(0);
   } catch (e) {
