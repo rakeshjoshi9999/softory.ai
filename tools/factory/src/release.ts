@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
-import { attest } from './attest.js';
+import { basename, dirname, join, resolve } from 'node:path';
+import { attest, attestationDir, tarballName, validateSigningKey } from './attest.js';
 import { emitterRef, gitCommit, provenanceFor, writeProvenance } from './provenance.js';
 
 export const DEFAULT_REGISTRY = 'http://localhost:4873/';
@@ -63,19 +63,36 @@ function npmEnv(registry: string, tmpRc: string) {
   return { ...process.env, npm_config_userconfig: tmpRc, NPM_CONFIG_USERCONFIG: tmpRc };
 }
 
-function isPublished(pkg: ReleasePackage, version: string, env: NodeJS.ProcessEnv, registry: string): boolean {
+/** Runs npm; tests inject a fake so no registry is needed. */
+export type NpmRunner = (args: string[], opts: { cwd?: string; env: NodeJS.ProcessEnv }) => void;
+
+const runNpm: NpmRunner = (args, { cwd, env }) => {
+  execFileSync('npm', args, { cwd, env, stdio: 'pipe' });
+};
+
+function isPublished(pkg: ReleasePackage, version: string, env: NodeJS.ProcessEnv, registry: string, npm: NpmRunner): boolean {
   try {
-    execFileSync('npm', ['view', `${pkg.name}@${version}`, 'version', '--registry', registry], { env, stdio: 'pipe' });
+    npm(['view', `${pkg.name}@${version}`, 'version', '--registry', registry], { env });
     return true;
   } catch {
     return false;
   }
 }
 
-export function release(material: string, opts: { root?: string; registry?: string; store?: string; signingKey?: string } = {}): string[] {
+/**
+ * Packs each package once, attests (SBOM, signature, provenance) that tarball, then publishes that same
+ * file. The key is checked first and every attestation is made before the first publish, so a failure
+ * leaves the registry untouched. A version that is published but has no attestations is an error.
+ */
+export function release(
+  material: string,
+  opts: { root?: string; registry?: string; store?: string; signingKey?: string; npm?: NpmRunner } = {},
+): string[] {
   const root = opts.root ?? '.';
+  const npm = opts.npm ?? runNpm;
   const signingKey = opts.signingKey ?? process.env['FACTORY_SIGNING_KEY'];
   if (!signingKey) throw new Error('FACTORY_SIGNING_KEY (PEM, ECDSA P-256 PKCS#8) is required: every release is signed');
+  validateSigningKey(signingKey);
   const store = resolve(root, opts.store ?? process.env['FACTORY_ATTESTATION_STORE'] ?? join('dist', 'attestations'));
   const registry = opts.registry ?? process.env['FACTORY_REGISTRY'] ?? DEFAULT_REGISTRY;
   const pkgs = packagesFor(material, root);
@@ -85,15 +102,20 @@ export function release(material: string, opts: { root?: string; registry?: stri
   const rc = resolve(root, 'dist', 'release.npmrc');
   mkdirSync(join(root, 'dist'), { recursive: true });
   const env = npmEnv(registry, rc);
-  const published: string[] = [];
+  const ready: { ref: string; tarball: string }[] = [];
   for (const pkg of pkgs) {
     stage(pkg);
     const version = readVersion(pkg);
-    if (isPublished(pkg, version, env, registry)) {
-      console.log(`${pkg.name}@${version}: already published, skipping`);
+    const ref = `${pkg.name}@${version}`;
+    if (isPublished(pkg, version, env, registry, npm)) {
+      const tarball = join(attestationDir(store, pkg.name, version), tarballName(pkg.name, version));
+      const missing = ['', '.sig', '.sbom.spdx.json', '.provenance.json', '.provenance.json.sig'].filter((x) => !existsSync(`${tarball}${x}`));
+      if (missing.length) {
+        throw new Error(`${ref} is published but unsigned: missing ${missing.map((x) => tarballName(pkg.name, version) + x).join(', ')} in ${dirname(tarball)}. Bump the version or restore the attestation store.`);
+      }
+      console.log(`${ref}: already published and attested, skipping`);
       continue;
     }
-    execFileSync('npm', ['publish', '--registry', registry, '--access', 'restricted'], { cwd: pkg.dir, env, stdio: 'inherit' });
     const a = attest(pkg.dir, store, signingKey);
     const prov = writeProvenance(
       provenanceFor({
@@ -106,8 +128,12 @@ export function release(material: string, opts: { root?: string; registry?: stri
       a.tarball,
       signingKey,
     );
-    console.log(`${pkg.name}@${version}: wrote ${a.sbom}, ${a.sig} and ${prov.statement}`);
-    published.push(`${pkg.name}@${version}`);
+    console.log(`${ref}: wrote ${a.sbom}, ${a.sig} and ${prov.statement}`);
+    ready.push({ ref, tarball: a.tarball });
   }
-  return published;
+  for (const { ref, tarball } of ready) {
+    npm(['publish', tarball, '--registry', registry, '--access', 'restricted'], { env });
+    console.log(`${ref}: published ${tarball}`);
+  }
+  return ready.map((r) => r.ref);
 }

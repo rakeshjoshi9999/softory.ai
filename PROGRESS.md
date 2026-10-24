@@ -14,9 +14,10 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - P1-09 assembly CLI `factory assemble` + products orders-ui, orders-service (merged, PR #60)
 
 - P2-03 provenance statements (merged, PR #64)
+- P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
-- #78 P2-14 assembly security: PR open, awaiting review
+- #79 P2-15 sign what is published: PR open, awaiting review
 - #21 P2-11 vulnerability scan -> recall: PR open, awaiting review
 - #18 P2-08 lifecycle states + `factory recall`: PR open, awaiting review
 - #17 P2-07 Renovate propagation: merged (PR #70)
@@ -92,4 +93,5 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - 2026-10-23 · #16 P2-06 · `factory impact <material-dir> [--json]` (oasdiff classify, graph/lockfile consumers, dry-run assemble, contract tests, Markdown+JSON), 7 tests; workflow blocked, provided at tools/factory/ci/impact.yml · branch claude/16-impact-analysis
 - 2026-10-23 · PR #71 (#18 P2-08) · builder fixed review: recall keeps only consumer rows whose package equals the recalled package; mixed angular/nest test added; `nx affected -t lint test build` green · branch claude/18-recall
 - 2026-10-24 · PR #92 · builder fixed review: added P1-11 (issue #76) to backlog/phase-1.json so P2-15's blockedBy resolves · branch claude/p2-backlog-extension
+- 2026-10-24 · #79 P2-15 · release validates key first, packs once, attests the tarball (SBOM/sig/provenance) for all packages, then `npm publish <tarball>`; published-but-unattested versions throw; 5 new tests; gate1-demo passes; `nx affected -t lint test build` green · branch claude/gifted-mendel-v4gnbs
 - 2026-10-24 · builder · synced PR #94 (#74) with main (PROGRESS/DECISIONS kept both sides, affected green); then #78 P2-14 · assemble fails closed on missing integrity (sha512, else shasum), foreign-origin tarball URL, unsafe tarballs (links/abs/`..`) + `--no-same-owner`; 3 new tests (fail without fix); `nx affected -t lint test build` green · branch claude/78-assembly-security
