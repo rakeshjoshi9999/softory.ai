@@ -30,7 +30,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - #74 P2-13 scan review fixes: PR open, awaiting review
 
 ## Next up
-- #76 P1-11: fix the `factory release` attestation path. `scripts/gate1-demo.sh` currently fails on a fresh checkout of main.
+- #76 P1-11: PR open, awaiting review (attestation path fixed; demo passes on a fresh checkout).
 - #75 Gate 1 review (needs-human): close it as completed once P1-11 merges and the demo passes. The planner then sets the phase to 2.
 
 ## Gate 1 evidence (P1-10)
@@ -60,6 +60,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
 - 2026-10-24 · builder · synced PRs #93 and #92 with main (merge, no conflicts, affected lint/test/build green); then #74 P2-13 · parseTrivy tolerates missing Results, scan all skips recalled/collects failures/fails on empty store/scans images, recall order registry then graph, nightly-scan.yml permissions+auth; 5 new tests; `nx affected -t lint test build` green · branch claude/74-scan-review-fixes
+- 2026-10-24 · #76 P1-11 · attest/release resolve the attestation store to an absolute path, relative-store test (fails without fix), recipe `chart/` for orders-ui/orders-service committed so the demo leaves `git status` empty; fresh-checkout `gate1-demo.sh` exits 0; `nx affected -t lint test build` green · branch claude/gifted-mendel-31nljy
+- 2026-10-24 · PR #73 · synced claude/ci-wiring with main (clean merge, nx affected green)
 - 2026-10-24 · planner · all phase-1 issues closed and no gate issue existed, so opened #75 Gate 1 review (needs-human). Re-ran scripts/gate1-demo.sh on main: it fails on a fresh checkout, so filed #76 [P1-11] (phase-1, ready). No blocked or stale in-progress issues. Phase left at 1 · branch claude/planner-2026-10-24
 - 2026-10-24 · #21 P2-11 · Dagger `scan` (Trivy JSON), `factory scan <pkg@ver>|all [--report|--sbom] [--dry-run]`, `recall --dryRun`, fixture critical-CVE test recalls in dry-run; `nx affected -t lint test build` green · branch claude/21-vuln-scan
 - 2026-10-23 · #18 P2-08 · version state in graph-service (GET/PUT /materials/:n/versions/:v[/state]), `factory recall` (graph state, npm deprecate, one GitHub issue per product), `assemble` refuses RECALLED versions; 6 new tests; `nx affected -t lint test build` green · branch claude/18-recall
@@ -88,3 +90,4 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - 2026-10-23 · #20 P2-10 · deploy/platform (kind config, Argo CD ApplicationSet, Kyverno require-signed-images), scripts/platform-up.sh + platform-test.sh, 5 structural tests; cluster run and CI job blocked · branch claude/20-gitops-kind
 - 2026-10-23 · #16 P2-06 · `factory impact <material-dir> [--json]` (oasdiff classify, graph/lockfile consumers, dry-run assemble, contract tests, Markdown+JSON), 7 tests; workflow blocked, provided at tools/factory/ci/impact.yml · branch claude/16-impact-analysis
 - 2026-10-23 · PR #71 (#18 P2-08) · builder fixed review: recall keeps only consumer rows whose package equals the recalled package; mixed angular/nest test added; `nx affected -t lint test build` green · branch claude/18-recall
+- 2026-10-24 · PR #92 · builder fixed review: added P1-11 (issue #76) to backlog/phase-1.json so P2-15's blockedBy resolves · branch claude/p2-backlog-extension

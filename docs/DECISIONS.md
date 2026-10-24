@@ -87,3 +87,5 @@ One line per decision: date · decision · reason · issue/PR.
 - 2026-10-24 · Nightly scan walks the SBOMs in the attestation store; workflow provided as `tools/factory/ci/nightly-scan.yml` because `.github/workflows/` is off-limits · #21
 - 2026-10-24 · `scan all` returns outcomes, skipped and failures; it exits 1 listing every failure after scanning everything; images come from `FACTORY_IMAGES`, and a critical image finding is a failure (no package ref to recall) · one bad package must not hide others · #74
 - 2026-10-24 · Recall order is now consumers lookup, registry `npm deprecate`, graph PUT, issues; a retry after a graph failure is safe because deprecate is idempotent · #74
+- 2026-10-24 · Attestation store is resolved against the workspace root (release) and the process cwd (attest) before `npm pack` runs with cwd = package dir · a relative store made npm write into the package dir · #76
+- 2026-10-24 · Recipe-emitted `products/*/chart/` for orders-ui and orders-service are committed · the demo's re-assembly regenerated them and left the tree dirty · #76
