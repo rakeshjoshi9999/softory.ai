@@ -10,7 +10,7 @@ import { ProvenanceStatementDto } from '../dto/provenance-statement.dto.js';
 export abstract class IngestControllerBase {
   /** Record the factory packages a product build consumes. */
   @Post('/ingest/lockfile')
-  @HttpCode(200)
+  @HttpCode(201)
   ingestLockfileRoute(@Body() body: LockfileIngestDto): Promise<LockfileIngestedDto> | LockfileIngestedDto {
     return this.ingestLockfile(body);
   }
@@ -20,7 +20,7 @@ export abstract class IngestControllerBase {
 
   /** Record a package and its material version from a provenance statement. */
   @Post('/ingest/provenance')
-  @HttpCode(200)
+  @HttpCode(201)
   ingestProvenanceRoute(@Body() body: ProvenanceStatementDto): Promise<ProvenanceIngestedDto> | ProvenanceIngestedDto {
     return this.ingestProvenance(body);
   }

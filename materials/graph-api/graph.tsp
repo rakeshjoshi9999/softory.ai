@@ -109,6 +109,18 @@ model StateChange {
   reason?: string;
 }
 
+/** Returned when a provenance statement is recorded. */
+model ProvenanceCreated {
+  @statusCode statusCode: 201;
+  @body body: ProvenanceIngested;
+}
+
+/** Returned when a lockfile is recorded. */
+model LockfileCreated {
+  @statusCode statusCode: 201;
+  @body body: LockfileIngested;
+}
+
 /** Error body returned for 4xx responses. */
 @error
 model Problem {
@@ -138,13 +150,13 @@ interface Ingest {
   @post
   @route("/provenance")
   @operationId("ingestProvenance")
-  provenance(@body statement: ProvenanceStatement): ProvenanceIngested | BadRequest;
+  provenance(@body statement: ProvenanceStatement): ProvenanceCreated | BadRequest;
 
   /** Record the factory packages a product build consumes. */
   @post
   @route("/lockfile")
   @operationId("ingestLockfile")
-  lockfile(@body lockfile: LockfileIngest): LockfileIngested | BadRequest;
+  lockfile(@body lockfile: LockfileIngest): LockfileCreated | BadRequest;
 }
 
 @route("/materials/{name}/versions/{version}")

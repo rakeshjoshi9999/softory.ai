@@ -13,8 +13,8 @@ paths:
       description: Record the factory packages a product build consumes.
       parameters: []
       responses:
-        '200':
-          description: The request has succeeded.
+        '201':
+          description: Returned when a lockfile is recorded.
           content:
             application/json:
               schema:
@@ -39,8 +39,8 @@ paths:
       description: Record a package and its material version from a provenance statement.
       parameters: []
       responses:
-        '200':
-          description: The request has succeeded.
+        '201':
+          description: Returned when a provenance statement is recorded.
           content:
             application/json:
               schema:
