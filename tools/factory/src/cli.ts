@@ -3,6 +3,7 @@ import { graphSync } from './graph.js';
 import { verifyPackage } from './attest.js';
 import { readProvenance, renderProvenance } from './provenance.js';
 import { impact, renderMarkdown } from './impact.js';
+import { propagate } from './propagate.js';
 import { recall } from './recall.js';
 import { readReport, scanAll, scanPackage, trivySbom } from './scan.js';
 import { DEFAULT_REGISTRY, release } from './release.js';
@@ -38,6 +39,17 @@ if (command === 'recall' && path) {
     const r = await recall(path, { reason: i > 0 ? (process.argv[i + 1] ?? '') : '' });
     console.log(`recalled ${r.package}@${r.version}; opened ${r.issues.length} issue(s)${r.products.length ? `: ${r.products.join(', ')}` : ''}`);
     process.exit(0);
+  } catch (e) {
+    console.error((e as Error).message);
+    process.exit(1);
+  }
+}
+
+if (command === 'propagate' && path) {
+  try {
+    const r = await propagate(path, { dryRun: process.argv.includes('--dry-run') });
+    for (const p of r.products) console.log(`${p.product}: ${p.from} -> ${p.to}: ${p.status} (${p.detail})`);
+    process.exit(r.products.some((p) => p.status === 'failed') ? 1 : 0);
   } catch (e) {
     console.error((e as Error).message);
     process.exit(1);
@@ -112,7 +124,7 @@ if (command === 'assemble' && path) {
 }
 
 if (command !== 'validate' || !path) {
-  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml> | factory graph sync | factory recall <package>@<version> --reason <text> | factory impact <material-dir> [--json] | factory scan <package>@<version>|all [--report <trivy.json>|--sbom <file>] [--dry-run]');
+  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml> | factory graph sync | factory recall <package>@<version> --reason <text> | factory impact <material-dir> [--json] | factory propagate <material>@<version> [--dry-run] | factory scan <package>@<version>|all [--report <trivy.json>|--sbom <file>] [--dry-run]');
   process.exit(2);
 }
 
