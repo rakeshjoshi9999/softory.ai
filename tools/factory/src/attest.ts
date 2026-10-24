@@ -1,7 +1,7 @@
 import { createHash, createPrivateKey, createPublicKey, sign, verify } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { basename, join, relative } from 'node:path';
+import { basename, join, relative, resolve } from 'node:path';
 
 /** Where signatures and SBOMs live, next to the registry's tarballs (Verdaccio cannot serve extra files). */
 export function attestationDir(store: string, name: string, version: string): string {
@@ -89,7 +89,8 @@ export function sbomFor(pkgDir: string, tarball: Buffer, created = new Date().to
 /** Packs `pkgDir`, writes `<tarball>.sbom.spdx.json` and `<tarball>.sig` into the store; returns their paths. */
 export function attest(pkgDir: string, store: string, privateKeyPem: string): { tarball: string; sbom: string; sig: string } {
   const pkg = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8')) as { name: string; version: string };
-  const dir = attestationDir(store, pkg.name, pkg.version);
+  // npm runs with cwd = pkgDir, so a relative store would otherwise be created in one place and packed into another.
+  const dir = resolve(attestationDir(store, pkg.name, pkg.version));
   mkdirSync(dir, { recursive: true });
   const packed = JSON.parse(execFileSync('npm', ['pack', '--json', '--pack-destination', dir], { cwd: pkgDir, stdio: 'pipe' }).toString()) as { filename: string }[];
   const tarball = join(dir, basename(packed[0]!.filename));
