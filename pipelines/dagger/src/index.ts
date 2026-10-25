@@ -1,5 +1,5 @@
 import { dag, Container, Directory, File, Secret, func, object } from '@dagger.io/dagger';
-import { blockCommand, pnpmSetupCommands, ciCommands, imageSpec, productBuildCommand, scanCommand, sbomCommand, signCommand, signImageCommand } from './plan.js';
+import { blockCommand, pnpmSetupCommands, ciCommands, imageSpec, productBuildCommand, scanCommand, SOURCE_EXCLUDES, sbomCommand, signCommand, signImageCommand } from './plan.js';
 
 const NODE_IMAGE = 'node:22-bookworm';
 const SYFT_IMAGE = 'anchore/syft:v1.18.1';
@@ -14,7 +14,7 @@ export class Factory {
     const base = pnpmSetupCommands().reduce((c, argv) => c.withExec(argv), dag.container().from(NODE_IMAGE));
     return base
       .withMountedCache('/root/.local/share/pnpm/store', dag.cacheVolume('pnpm-store'))
-      .withDirectory('/work', src, { exclude: ['node_modules', '.nx', 'dist'] })
+      .withDirectory('/work', src, { exclude: [...SOURCE_EXCLUDES] })
       .withWorkdir('/work')
       .withExec(['pnpm', 'install', '--frozen-lockfile']);
   }

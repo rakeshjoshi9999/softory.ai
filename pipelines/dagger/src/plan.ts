@@ -9,6 +9,9 @@ export const BLOCKS: readonly Block[] = ['lint', 'test', 'build'];
 /** pnpm major the lockfile (v9) and the verify job use; corepack's default is newer and refuses unapproved build scripts. */
 export const PNPM_VERSION = '9.15.9';
 
+/** Host-only directories kept out of the container at any depth, so it matches a clean checkout. */
+export const SOURCE_EXCLUDES: readonly string[] = ['**/node_modules', '**/.nx', '**/dist'];
+
 /** argv that activates the pinned pnpm through corepack. */
 export function pnpmSetupCommands(): string[][] {
   return [['corepack', 'enable'], ['corepack', 'prepare', `pnpm@${PNPM_VERSION}`, '--activate']];

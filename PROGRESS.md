@@ -42,6 +42,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - #74 P2-13 scan review fixes: PR open, awaiting review
 
 - #82 P2-18: draft PR open, pnpm pin fix pushed; needs a CI `dagger` job run to confirm
+- #99 P2-29 Dagger exclude patterns match nested dirs: PR open, needs-review (criterion 3, Dagger run, not runnable here)
 
 ## Next up
 - #76 P1-11: merged (PR #93); all phase-1 issues are closed.
@@ -138,3 +139,4 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · builder · #98 (P2-28): criterion 1 done, criteria 2-3 blocked (no Dagger CLI in sandbox); draft PR; closed stale #89 (merged in #120) · branch claude/98-dagger-typecheck
 - 2026-10-25 · human (Codespace) · #98 (P2-28): `dagger call -m pipelines/dagger ci --src=. --base=origin/main` exit 0; with a deliberately failing test it exits 1 · branch claude/98-dagger-typecheck
 - 2026-10-25 · builder · #98 (P2-28): merged main into PR #124, `nx affected -t lint test build` green, marked ready + needs-review · branch claude/98-dagger-typecheck
+- 2026-10-25 · #99 P2-29 · `SOURCE_EXCLUDES` (`**/node_modules`, `**/.nx`, `**/dist`) in plan.ts used by workspace(), 2 tests; criterion 3 (Dagger run with nested node_modules) not run, no Dagger/Docker here; `nx affected -t lint test build` green · branch claude/99-dagger-excludes

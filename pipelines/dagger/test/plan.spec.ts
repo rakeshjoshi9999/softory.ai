@@ -56,3 +56,14 @@ describe('pnpmSetupCommands', () => {
     expect(PNPM_VERSION.split('.')[0]).toBe('9');
   });
 });
+
+import { SOURCE_EXCLUDES } from '../src/plan.js';
+describe('SOURCE_EXCLUDES', () => {
+  it('matches node_modules, .nx and dist at any depth', () => {
+    expect([...SOURCE_EXCLUDES]).toEqual(['**/node_modules', '**/.nx', '**/dist']);
+  });
+  it('is what index.ts passes to withDirectory', () => {
+    const src = readFileSync(join(fileURLToPath(new URL('../src/index.ts', import.meta.url))), 'utf8');
+    expect(src).toContain('exclude: [...SOURCE_EXCLUDES]');
+  });
+});
