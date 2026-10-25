@@ -8,6 +8,8 @@ import { GraphError, graphClient } from './graph-client.js';
 import { readLockfiles } from './graph.js';
 import { DEFAULT_REGISTRY, packagesFor, release } from './release.js';
 
+export type AssembleStatus = 'ok' | 'skipped' | 'failed';
+
 export type Change = 'patch' | 'minor' | 'breaking';
 
 export interface ProductImpact {
@@ -16,7 +18,8 @@ export interface ProductImpact {
   via: 'graph' | 'lockfile';
   /** Range in product.yaml accepts the version this change would release. */
   rangeAccepts: boolean;
-  assemble: { ok: boolean; detail: string };
+  /** `skipped` when the registry could not be reached; it neither passes nor fails the consumer. */
+  assemble: { status: AssembleStatus; detail: string };
   tests: { ok: boolean; detail: string };
 }
 
@@ -43,7 +46,7 @@ export interface ImpactDeps {
   registryReachable(): Promise<boolean>;
   /** Publishes the proposed version of `material` (from `generated/`) so consumers can resolve it. */
   seedRegistry?(material: string, version: string): void;
-  dryAssemble(manifest: string): Promise<{ ok: boolean; detail: string }>;
+  dryAssemble(manifest: string): Promise<{ status: AssembleStatus; detail: string }>;
   runTests(product: string): { ok: boolean; detail: string };
 }
 
@@ -66,6 +69,14 @@ export function classify(deps: Pick<ImpactDeps, 'oasdiff'>, released: string, ge
 }
 
 const bump = (version: string, change: Change) => semver.inc(version, change === 'breaking' ? 'major' : change)!;
+
+const NETWORK_CODES = new Set(['ECONNREFUSED', 'ECONNRESET', 'ENOTFOUND', 'EAI_AGAIN', 'ETIMEDOUT', 'EHOSTUNREACH', 'ENETUNREACH', 'UND_ERR_CONNECT_TIMEOUT']);
+
+/** True for a failure to reach the registry (undici's `fetch failed`), not for an answer the registry gave. */
+const isNetworkError = (e: unknown): boolean => {
+  const cause = (e as { cause?: { code?: string } }).cause;
+  return (e instanceof TypeError && (e as Error).message === 'fetch failed') || (cause?.code !== undefined && NETWORK_CODES.has(cause.code));
+};
 
 export const realDeps = (root: string): ImpactDeps => ({
   oasdiff: (args) => {
@@ -104,9 +115,10 @@ export const realDeps = (root: string): ImpactDeps => ({
   async dryAssemble(manifest) {
     try {
       const r = await assemble(manifest, { root, dryRun: true });
-      return { ok: true, detail: `would write ${r.written.length} file(s), ${r.unchanged} unchanged` };
+      return { status: 'ok', detail: `would write ${r.written.length} file(s), ${r.unchanged} unchanged` };
     } catch (e) {
-      return { ok: false, detail: (e as Error).message.split('\n')[0] ?? 'failed' };
+      if (isNetworkError(e)) return { status: 'skipped', detail: 'registry unreachable' };
+      return { status: 'failed', detail: (e as Error).message.split('\n')[0] ?? 'failed' };
     }
   },
   runTests(product) {
@@ -159,14 +171,14 @@ export async function impact(materialDir: string, opts: { root?: string; deps?: 
       via: via(product),
       rangeAccepts,
       assemble: !existsSync(manifestPath)
-        ? { ok: false, detail: 'no product.yaml' }
+        ? { status: 'failed', detail: 'no product.yaml' }
         : reachable
           ? await deps.dryAssemble(manifestPath)
-          : { ok: true, detail: 'skipped, registry unreachable' },
+          : { status: 'skipped', detail: 'registry unreachable' },
       tests: deps.runTests(product),
     });
   }
-  const ok = products.every((p) => p.rangeAccepts && p.assemble.ok && p.tests.ok);
+  const ok = products.every((p) => p.rangeAccepts && p.assemble.status !== 'failed' && p.tests.ok);
   return { material: meta.name, current: meta.version, next, change, findings, products, dryRun: reachable ? 'run' : 'skipped', ok };
 }
 
@@ -175,6 +187,8 @@ const pinOf = (packages: Record<string, string>, material: string): string | und
   packages[`@factory/${material}-nest`] ?? packages[`@factory/${material}-angular`];
 
 const mark = (ok: boolean) => (ok ? 'pass' : 'FAIL');
+const markAssemble = (a: ProductImpact['assemble']) =>
+  a.status === 'skipped' ? `skipped (${a.detail})` : `${mark(a.status === 'ok')} (${a.detail})`;
 
 export function renderMarkdown(r: ImpactReport): string {
   const lines = [
@@ -186,7 +200,7 @@ export function renderMarkdown(r: ImpactReport): string {
   if (!r.products.length) lines.push('No consuming products found.');
   else {
     lines.push('| Product | Range accepts next | Dry-run assembly | Contract tests |', '| --- | --- | --- | --- |');
-    for (const p of r.products) lines.push(`| ${p.product} | ${mark(p.rangeAccepts)} | ${mark(p.assemble.ok)} (${p.assemble.detail}) | ${mark(p.tests.ok)} (${p.tests.detail}) |`);
+    for (const p of r.products) lines.push(`| ${p.product} | ${mark(p.rangeAccepts)} | ${markAssemble(p.assemble)} | ${mark(p.tests.ok)} (${p.tests.detail}) |`);
   }
   lines.push('', r.dryRun === 'run' ? 'Dry-run assembly: run against the registry.' : 'Dry-run assembly: **skipped** (registry unreachable).');
   lines.push('', r.ok ? 'Result: no consumer breaks.' : 'Result: **at least one consumer breaks.**');
