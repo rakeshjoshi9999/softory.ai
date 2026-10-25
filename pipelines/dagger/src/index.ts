@@ -1,5 +1,5 @@
 import { dag, Container, Directory, File, Secret, func, object } from '@dagger.io/dagger';
-import { assertWorkspaceEntries, blockCommand, pnpmSetupCommands, ciCommands, imageOutDir, imageSpec, productBuildCommand, scanCommand, SOURCE_EXCLUDES, sbomCommand, signCommand, signImageCommand } from './plan.js';
+import { DEPS_IMAGE, assertWorkspaceEntries, remoteIndexHtml, runtimeInstallCommand, runtimePackageJson, blockCommand, pnpmSetupCommands, ciCommands, imageOutDir, imageSpec, productBuildCommand, scanCommand, SOURCE_EXCLUDES, sbomCommand, signCommand, signImageCommand } from './plan.js';
 
 const NODE_IMAGE = 'node:22-bookworm';
 const SYFT_IMAGE = 'anchore/syft:v1.18.1';
@@ -75,9 +75,22 @@ export class Factory {
   @func()
   async image(src: Directory, product: string, kind: string): Promise<Container> {
     const spec = imageSpec(kind);
-    const out = (await this.workspace(src))
-      .withExec(productBuildCommand(product))
-      .directory(`/work/${imageOutDir(product)}`);
+    const built = (await this.workspace(src)).withExec(productBuildCommand(product));
+    let out = built.directory(`/work/${imageOutDir(product)}`);
+    if (kind === 'nestjs-service') {
+      // production dependencies, installed in a node image because distroless has no npm
+      const rootPkg = JSON.parse(await src.file('package.json').contents());
+      const deps = dag
+        .container()
+        .from(DEPS_IMAGE)
+        .withWorkdir('/deps')
+        .withNewFile('/deps/package.json', runtimePackageJson(rootPkg))
+        .withExec(runtimeInstallCommand())
+        .directory('/deps/node_modules');
+      out = out.withDirectory('node_modules', deps);
+    } else {
+      out = out.withFile('index.html', built.file(`/work/${remoteIndexHtml(product)}`));
+    }
     const ctr = dag
       .container()
       .from(spec.base)

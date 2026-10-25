@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { imageOutDir, imageSpec, productBuildCommand, signImageCommand } from '../src/plan.js';
+import { SERVICE_RUNTIME_DEPENDENCIES, imageOutDir, imageRequiredPaths, imageSpec, productBuildCommand, remoteIndexHtml, runtimeInstallCommand, runtimePackageJson, signImageCommand } from '../src/plan.js';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..');
 const read = (p: string) => readFileSync(join(root, p), 'utf8');
@@ -79,5 +79,55 @@ describe('product charts', () => {
     expect(chart.name).toBe(name);
     expect(chart.dependencies).toEqual([expect.objectContaining({ name: 'factory-lib', repository: 'file://../../../deploy/charts/factory-lib' })]);
     expect(read(`products/${name}/chart/templates/workload.yaml`)).toContain('factory-lib.');
+  });
+});
+
+describe('image contents', () => {
+  const rootPkg = JSON.parse(read('package.json'));
+
+  it('pins every service runtime dependency from the root package.json and rejects unknown ones', () => {
+    const pkg = JSON.parse(runtimePackageJson(rootPkg));
+    expect(Object.keys(pkg.dependencies).sort()).toEqual([...SERVICE_RUNTIME_DEPENDENCIES].sort());
+    expect(pkg.dependencies['@nestjs/core']).toBe(rootPkg.dependencies?.['@nestjs/core'] ?? rootPkg.devDependencies['@nestjs/core']);
+    expect(() => runtimePackageJson(rootPkg, ['left-pad-nope'])).toThrow(/not declared/);
+  });
+
+  it('installs production dependencies without running scripts', () => {
+    expect(runtimeInstallCommand()).toEqual(expect.arrayContaining(['--omit=dev', '--ignore-scripts']));
+  });
+
+  it('covers every package the built service imports', () => {
+    const files = [
+      'products/orders-service/src/main.ts',
+      'products/orders-service/src/app.module.ts',
+      'products/orders-service/src/telemetry.ts',
+      'products/orders-service/src/health/health.controller.ts',
+      'products/orders-service/src/config/config.ts',
+    ];
+    const imported = new Set<string>();
+    for (const f of files) {
+      for (const m of read(f).matchAll(/(?:from|import)\s+'([^.'][^']*)'/g)) {
+        const parts = m[1].split('/');
+        imported.add(m[1].startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]);
+      }
+    }
+    expect(imported.size).toBeGreaterThan(0);
+    for (const name of imported) {
+      if (name.startsWith('node:')) continue;
+      expect(SERVICE_RUNTIME_DEPENDENCIES, name).toContain(name);
+    }
+  });
+
+  it('requires main.js and its dependencies in the service image, index.html in the remote image', () => {
+    const paths = imageRequiredPaths('nestjs-service');
+    expect(paths).toContain('/app/main.js');
+    expect(paths).toContain('/app/node_modules/@nestjs/common/package.json');
+    expect(imageRequiredPaths('angular-remote')).toEqual(['/usr/share/nginx/html/index.html']);
+  });
+
+  it('the entrypoint is one of the required paths and the remote page exists in the sources', () => {
+    expect(imageRequiredPaths('nestjs-service')).toContain(imageSpec('nestjs-service').entrypoint[1]);
+    expect(existsSync(join(root, remoteIndexHtml('orders-ui')))).toBe(true);
+    expect(() => remoteIndexHtml('../x')).toThrow(/invalid product name/);
   });
 });
