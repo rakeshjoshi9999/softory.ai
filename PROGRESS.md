@@ -17,6 +17,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
+- #91 P2-27 builder claims an issue before working on it: PR open, needs-human + needs-review
 - #98 P2-28 Dagger index.ts type-checked: PR #124 open, needs-review (affected lint/test/build green)
 - #84 P2-20 graph-service API as a TypeSpec material: PR #114 open, needs-review
 - #86 P2-22 `factory propagate`: PR #116 open, needs-review
@@ -140,4 +141,5 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · builder · #98 (P2-28): criterion 1 done, criteria 2-3 blocked (no Dagger CLI in sandbox); draft PR; closed stale #89 (merged in #120) · branch claude/98-dagger-typecheck
 - 2026-10-25 · human (Codespace) · #98 (P2-28): `dagger call -m pipelines/dagger ci --src=. --base=origin/main` exit 0; with a deliberately failing test it exits 1 · branch claude/98-dagger-typecheck
 - 2026-10-25 · builder · #98 (P2-28): merged main into PR #124, `nx affected -t lint test build` green, marked ready + needs-review · branch claude/98-dagger-typecheck
+- 2026-10-25 · #91 P2-27 · prompts/builder.md step 5: claim comment + back-off + 3 h stale takeover; docs only; `nx affected` run below · branch claude/91-builder-claim
 - 2026-10-25 · #90 P2-26 · proposed ci.yml at tools/factory/ci/ci.yml (kubeconform + Dagger from pinned release archives, SHA-256 verified; checksums confirmed against upstream files); impact.yml already used `env: BASE_REF` (criterion 2 met on main); 3 new tests (fail without file); `nx affected -t lint test build` green · branch claude/90-ci-hardening
