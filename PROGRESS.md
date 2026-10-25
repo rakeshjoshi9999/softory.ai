@@ -17,7 +17,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
-- #89 P2-25 recall is idempotent: PR open, needs-review
+- #98 P2-28 Dagger index.ts type-checked: PR #124 open, needs-review (affected lint/test/build green)
 - #84 P2-20 graph-service API as a TypeSpec material: PR #114 open, needs-review
 - #86 P2-22 `factory propagate`: PR #116 open, needs-review
 - #87 P2-23 impact dry-run assembly in CI: PR #117 open, needs-human + needs-review
@@ -135,3 +135,6 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-24 · PR #116 (#86 P2-22) · builder fixed review: branches start from origin/base and the checkout/product tree is restored; assembled pin must equal the requested version else `failed` (no PR, no label); per-product try/catch around assemble/tests/push; 3 new tests incl. a real temp git repo; `nx affected -t lint test build` green · branch claude/86-propagate
 - 2026-10-24 · builder · PR #118 (#88 P2-24) review fix: consumer products get implicitDependencies on orders-api/orders-service and test inputs covering generated/, fixtures and test-support, so an orders-api change makes `nx affected -t test` run them (verified via `nx show projects --affected --files=materials/orders-api/generated/openapi.yaml`); `nx affected -t lint test build` green · branch claude/88-live-contract-tests
 - 2026-10-25 · builder · sync check: PRs #112,#115,#116,#117,#118 current with main; #114 conflicts in recall.ts (logic, left alone, already `blocked`, question logged); no changes-requested PRs; no resumable issue; no new work started (sync used the run) · branch claude/gifted-mendel-w77bkq
+- 2026-10-25 · builder · #98 (P2-28): criterion 1 done, criteria 2-3 blocked (no Dagger CLI in sandbox); draft PR; closed stale #89 (merged in #120) · branch claude/98-dagger-typecheck
+- 2026-10-25 · human (Codespace) · #98 (P2-28): `dagger call -m pipelines/dagger ci --src=. --base=origin/main` exit 0; with a deliberately failing test it exits 1 · branch claude/98-dagger-typecheck
+- 2026-10-25 · builder · #98 (P2-28): merged main into PR #124, `nx affected -t lint test build` green, marked ready + needs-review · branch claude/98-dagger-typecheck
