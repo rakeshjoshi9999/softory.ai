@@ -17,7 +17,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
-- #98 P2-28 Dagger index.ts type-checked: PR #124 open (criteria 2-3 verified by a human in a Codespace; waiting on the full affected run)
+- #98 P2-28 Dagger index.ts type-checked: PR #124 open, needs-review (affected lint/test/build green)
 - #84 P2-20 graph-service API as a TypeSpec material: PR #114 open, needs-review
 - #86 P2-22 `factory propagate`: PR #116 open, needs-review
 - #87 P2-23 impact dry-run assembly in CI: PR #117 open, needs-human + needs-review
@@ -137,3 +137,4 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · builder · sync check: PRs #112,#115,#116,#117,#118 current with main; #114 conflicts in recall.ts (logic, left alone, already `blocked`, question logged); no changes-requested PRs; no resumable issue; no new work started (sync used the run) · branch claude/gifted-mendel-w77bkq
 - 2026-10-25 · builder · #98 (P2-28): criterion 1 done, criteria 2-3 blocked (no Dagger CLI in sandbox); draft PR; closed stale #89 (merged in #120) · branch claude/98-dagger-typecheck
 - 2026-10-25 · human (Codespace) · #98 (P2-28): `dagger call -m pipelines/dagger ci --src=. --base=origin/main` exit 0; with a deliberately failing test it exits 1 · branch claude/98-dagger-typecheck
+- 2026-10-25 · builder · #98 (P2-28): merged main into PR #124, `nx affected -t lint test build` green, marked ready + needs-review · branch claude/98-dagger-typecheck
