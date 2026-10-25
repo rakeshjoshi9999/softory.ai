@@ -48,4 +48,17 @@ describe('local platform (kind + Argo CD + Kyverno)', () => {
     expect(up).toContain('applicationset.yaml');
     expect(up).toContain('require-signed-images.yaml');
   });
+
+  it('platform-up retries the policy apply and waits for Ready; the test retries before failing', () => {
+    const up = read('scripts/platform-up.sh');
+    const wait = up.indexOf('kubectl wait --for=condition=Ready clusterpolicy/require-signed-images');
+    const apply = up.indexOf('kubectl apply -f "$policyfile"');
+    expect(apply).toBeGreaterThan(0);
+    expect(up.slice(up.lastIndexOf('for i in $(seq 1', apply), apply)).toContain('for i in');
+    expect(wait).toBeGreaterThan(apply);
+    expect(wait).toBeLessThan(up.indexOf('platform-up: ready'));
+    const test = read('scripts/platform-test.sh');
+    expect(test).toMatch(/for i in \$\(seq 1 "\$attempts"\)/);
+    expect(test).toContain('admitted on all $attempts attempts');
+  });
 });

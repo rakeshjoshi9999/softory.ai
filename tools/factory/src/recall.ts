@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { graphClient } from './graph-client.js';
+import { GraphError, graphClient } from './graph-client.js';
 import { DEFAULT_REGISTRY } from './release.js';
 
 /** Prefix `npm deprecate` carries for recalled versions; `assemble` refuses these. */
@@ -23,7 +23,12 @@ export interface RecallResult {
   material: string;
   version: string;
   products: string[];
+  /** Issues opened by this run. */
   issues: { product: string; payload: { title: string; body: string; labels: string[] } }[];
+  /** The graph already had this version as recalled: registry and graph were left alone. */
+  alreadyRecalled?: boolean;
+  /** Products whose open recall issue already existed. */
+  existingIssues?: string[];
 }
 
 /** `@factory/orders-api-angular@1.0.1` -> material `orders-api`, version `1.0.1`. */
@@ -60,23 +65,49 @@ export async function recall(ref: string, opts: RecallOptions): Promise<RecallRe
     const planned = products.map((product) => ({ product, payload: issuePayload(product, pkg, version, opts.reason) }));
     return { package: pkg, material, version, products, issues: planned };
   }
-  // registry first: a half-done recall must never leave the graph saying "recalled" while the registry still serves the version
-  (opts.deprecate ?? npmDeprecate)(`${pkg}@${version}`, `${RECALL_PREFIX}${opts.reason}`, registry);
-  await graph.setVersionState(material, version, { state: 'recalled', reason: opts.reason });
+  // idempotent: a version the graph already marks recalled skips deprecate and the state change (#89)
+  let alreadyRecalled = false;
+  try {
+    alreadyRecalled = (await graph.getVersion(material, version)).state === 'recalled';
+  } catch (e) {
+    if (!(e instanceof GraphError && e.status === 404)) throw e;
+  }
+  if (!alreadyRecalled) {
+    // registry first: a half-done recall must never leave the graph saying "recalled" while the registry still serves the version
+    (opts.deprecate ?? npmDeprecate)(`${pkg}@${version}`, `${RECALL_PREFIX}${opts.reason}`, registry);
+    await graph.setVersionState(material, version, { state: 'recalled', reason: opts.reason });
+  }
 
   const repo = opts.repo ?? process.env['FACTORY_RECALL_REPO'] ?? process.env['GITHUB_REPOSITORY'];
   const token = opts.token ?? process.env['GITHUB_TOKEN'];
-  const issues = products.map((product) => ({ product, payload: issuePayload(product, pkg, version, opts.reason) }));
-  if (issues.length > 0) {
+  const planned = products.map((product) => ({ product, payload: issuePayload(product, pkg, version, opts.reason) }));
+  const issues: RecallResult['issues'] = [];
+  const existingIssues: string[] = [];
+  if (planned.length > 0) {
     if (!repo || !token) throw new Error('GITHUB_TOKEN and FACTORY_RECALL_REPO (owner/repo) are required to open recall issues');
-    for (const i of issues) {
-      const res = await f(`https://api.github.com/repos/${repo}/issues`, {
-        method: 'POST',
-        headers: { authorization: `Bearer ${token}`, accept: 'application/vnd.github+json', 'content-type': 'application/json' },
-        body: JSON.stringify(i.payload),
-      });
+    const headers = { authorization: `Bearer ${token}`, accept: 'application/vnd.github+json', 'content-type': 'application/json' };
+    const open = await openRecallTitles(f, repo, headers);
+    for (const i of planned) {
+      if (open.has(i.payload.title)) {
+        existingIssues.push(i.product);
+        continue;
+      }
+      const res = await f(`https://api.github.com/repos/${repo}/issues`, { method: 'POST', headers, body: JSON.stringify(i.payload) });
       if (!res.ok) throw new Error(`${i.product}: GitHub answered ${res.status} ${await res.text()}`);
+      issues.push(i);
     }
   }
-  return { package: pkg, material, version, products, issues };
+  return { package: pkg, material, version, products, issues, alreadyRecalled, existingIssues };
+}
+
+/** Titles of all open issues labelled `recall` (paged). */
+async function openRecallTitles(f: typeof fetch, repo: string, headers: Record<string, string>): Promise<Set<string>> {
+  const titles = new Set<string>();
+  for (let page = 1; ; page++) {
+    const res = await f(`https://api.github.com/repos/${repo}/issues?labels=recall&state=open&per_page=100&page=${page}`, { headers });
+    if (!res.ok) throw new Error(`GitHub answered ${res.status} listing recall issues: ${await res.text()}`);
+    const batch = (await res.json()) as { title: string; pull_request?: unknown }[];
+    for (const i of batch) if (!i.pull_request) titles.add(i.title);
+    if (batch.length < 100) return titles;
+  }
 }

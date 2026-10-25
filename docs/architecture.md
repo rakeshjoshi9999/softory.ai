@@ -81,6 +81,11 @@ version range; generated code lands in `generated/` and is never hand-edited.
 
 Dry run (no network, mock registry with 1.0.1 and 1.1.0): `scripts/renovate-dry-run.sh` prints the upgrades Renovate computes for every consumer product. Renovate's `local` platform cannot push, so it stops after lookup; branch creation needs a real platform. The registry URL in `renovate.json` is the local Verdaccio default and must change when a shared registry exists.
 
+`factory propagate <material>@<version> [--dry-run]` is the path that needs no external platform: for each product whose lockfile pins the material it re-runs `factory assemble` (re-resolving the pin), runs the product's tests and opens one PR (branch `factory/propagate-<material>-<version>-<product>`) via the GitHub REST API with `GITHUB_TOKEN` + `GITHUB_REPOSITORY`. Patch bumps with green tests get `needs-review` + `claude-approved` (auto-merge); minor and major get `needs-review` only. A product whose `consumes` range excludes the version is skipped and reported; an already-open PR for the branch is left alone, so re-runs open no duplicates. Use Renovate where a platform app is installed; use `propagate` in the factory's own pipeline and demos.
+
+## Deployment charts
+Every recipe emits a thin Helm chart into `products/<name>/chart/` (templates come from the `factory-lib` library chart in `deploy/charts/`). The Argo CD ApplicationSet (`deploy/platform/argocd/applicationset.yaml`) discovers products through the path `products/*/chart`, and `scripts/chart-check.sh` runs `helm lint` + `kubeconform` on the per-kind charts and on every product chart.
+
 ## Build roadmap and gates
 | Phase | Delivers | Gate (a human closes the `Gate n review` issue to advance) |
 | --- | --- | --- |

@@ -23,7 +23,16 @@
       "options": {
         "command": "vitest run --root . products/orders-service",
         "cwd": "{workspaceRoot}"
-      }
+      },
+      "inputs": [
+        "default",
+        "{workspaceRoot}/materials/orders-api/generated/**/*",
+        "{workspaceRoot}/materials/orders-api/test/fixtures/**/*",
+        "{workspaceRoot}/products/orders-service/test-support/**/*"
+      ]
     }
-  }
+  },
+  "implicitDependencies": [
+    "orders-api"
+  ]
 }

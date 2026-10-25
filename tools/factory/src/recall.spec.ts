@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { issuePayload, parsePackageRef, recall } from './recall.js';
 
-function fakeFetch(consumers: { product: string; package: string }[], opts: { graphStatus?: number } = {}) {
+function fakeFetch(consumers: { product: string; package: string }[], opts: { graphStatus?: number; state?: string; openIssues?: string[] } = {}) {
   const calls: { url: string; method: string; body?: unknown }[] = [];
   const impl = (async (url: string, init?: RequestInit) => {
     calls.push({ url, method: init?.method ?? 'GET', body: init?.body ? JSON.parse(init.body as string) : undefined });
     if (url.endsWith('/state')) return new Response('{}', { status: opts.graphStatus ?? 200 });
     if (url.endsWith('/consumers')) return new Response(JSON.stringify(consumers));
+    if (url.includes('/versions/') && !init?.method) return new Response(JSON.stringify({ state: opts.state ?? 'released' }));
+    if (url.includes('api.github.com') && !init?.method) return new Response(JSON.stringify((opts.openIssues ?? []).map((title) => ({ title }))));
     return new Response('{}', { status: 201 });
   }) as unknown as typeof fetch;
   return { impl, calls };
@@ -48,7 +50,7 @@ describe('recall', () => {
     const { impl, calls } = fakeFetch(mixed);
     const r = await recall('@factory/orders-api-angular@1.0.1', { reason: 'x', graphUrl: 'http://graph', repo: 'o/r', token: 't', fetchImpl: impl, deprecate: () => undefined });
     expect(r.products).toEqual(['orders-admin-ui', 'orders-ui']);
-    expect(calls.filter((c) => c.url.includes('api.github.com'))).toHaveLength(2);
+    expect(calls.filter((c) => c.url.includes('api.github.com') && c.method === 'POST')).toHaveLength(2);
   });
 
   it('opens no issues when nobody consumes the version, and needs no token then', async () => {
@@ -68,6 +70,41 @@ describe('recall', () => {
     await expect(recall('@factory/orders-api-nest@9.9.9', { reason: 'x', graphUrl: 'http://graph', fetchImpl: tracked, deprecate: () => void order.push('registry') })).rejects.toThrow(/404/);
     expect(order).toEqual(['registry', 'graph']);
     await expect(recall('@factory/orders-api-nest@1.0.0', { reason: ' ' })).rejects.toThrow(/--reason/);
+  });
+});
+
+describe('recall idempotency', () => {
+  const run = (o: Parameters<typeof fakeFetch>[1]) => {
+    const { impl, calls } = fakeFetch(consumers, o);
+    const deprecated: string[][] = [];
+    const p = recall(ang, { reason: 'x', graphUrl: 'http://graph', repo: 'o/r', token: 't', fetchImpl: impl, deprecate: (...a) => void deprecated.push(a) });
+    return { p, calls, deprecated };
+  };
+
+  it('skips products that already have an open recall issue', async () => {
+    const { p, calls } = run({ openIssues: [issuePayload('orders-ui', '@factory/orders-api-angular', '1.0.1', 'x').title] });
+    const r = await p;
+    expect(r.existingIssues).toEqual(['orders-ui']);
+    expect(r.issues.map((i) => i.product)).toEqual(['orders-admin-ui']);
+    expect(calls.filter((c) => c.method === 'POST')).toHaveLength(1);
+  });
+
+  it('changes nothing when the version is already recalled and its issues exist', async () => {
+    const titles = ['orders-ui', 'orders-admin-ui'].map((p) => issuePayload(p, '@factory/orders-api-angular', '1.0.1', 'x').title);
+    const { p, calls, deprecated } = run({ state: 'recalled', openIssues: titles });
+    const r = await p;
+    expect(r.alreadyRecalled).toBe(true);
+    expect(r.issues).toEqual([]);
+    expect(deprecated).toEqual([]);
+    expect(calls.filter((c) => c.method !== 'GET')).toEqual([]);
+  });
+
+  it('on an already recalled version still opens issues that a failed earlier run missed', async () => {
+    const { p, calls, deprecated } = run({ state: 'recalled' });
+    const r = await p;
+    expect(r.issues).toHaveLength(2);
+    expect(deprecated).toEqual([]);
+    expect(calls.some((c) => c.method === 'PUT')).toBe(false);
   });
 });
 
