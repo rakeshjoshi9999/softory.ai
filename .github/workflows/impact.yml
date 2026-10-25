@@ -1,4 +1,4 @@
-﻿name: impact
+name: impact
 
 on:
   pull_request:
