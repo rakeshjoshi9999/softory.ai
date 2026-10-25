@@ -3,10 +3,26 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { imageSpec, productBuildCommand, signImageCommand } from '../src/plan.js';
+import { imageOutDir, imageSpec, productBuildCommand, signImageCommand } from '../src/plan.js';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..');
 const read = (p: string) => readFileSync(join(root, p), 'utf8');
+
+describe('image output directory', () => {
+  it('matches the build output declared by the committed products and the recipes', () => {
+    for (const product of ['orders-service', 'orders-ui']) {
+      const project = JSON.parse(read(`products/${product}/project.json`));
+      expect(project.targets.build.outputs).toContain(`{workspaceRoot}/${imageOutDir(product)}`);
+    }
+    for (const recipe of ['nestjs-service', 'angular-remote']) {
+      expect(read(`recipes/${recipe}/src/generator/templates.ts`)).toContain('outputs: [`{workspaceRoot}/dist/${v.directory}`]');
+    }
+    expect(imageOutDir('orders-service')).toBe('dist/products/orders-service');
+  });
+  it('rejects unsafe product names', () => {
+    expect(() => imageOutDir('../x')).toThrow(/invalid product name/);
+  });
+});
 
 describe('image plan', () => {
   it('uses nginx-unprivileged for remotes and distroless Node for services, both non-root', () => {

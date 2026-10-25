@@ -19,6 +19,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 ## In progress
 - #91 P2-27 builder claims an issue before working on it: PR open, needs-human + needs-review
 - #98 P2-28 Dagger index.ts type-checked: PR #124 open, needs-review (affected lint/test/build green)
+- #102 P2-32 Dagger image() outDir: PR open, needs-review
 - #84 P2-20 graph-service API as a TypeSpec material: PR #114 open, needs-review
 - #86 P2-22 `factory propagate`: PR #116 open, needs-review
 - #87 P2-23 impact dry-run assembly in CI: PR #117 open, needs-human + needs-review
@@ -150,3 +151,4 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · builder · synced PR #128 (#99) with main (merge, PROGRESS/DECISIONS kept both sides, affected green); #127 current; #128 changes-requested needs Dagger-engine evidence from a human, so no code fix possible · branch claude/99-dagger-excludes
 - 2026-10-25 · builder · PR #128 (#99): re-synced with main (conflicts in PROGRESS/DECISIONS, kept both), affected green; blocking review item needs human Dagger run
 - 2026-10-25 · #100 P2-30 · Dagger workspace() rejects a source dir lacking package.json/nx.json/pnpm-lock.yaml before install (assertWorkspaceEntries), 2 new tests; `nx affected -t lint test build` green; engine not run (no Docker) · branch claude/100-dagger-assert-workspace
+- 2026-10-25 · #102 P2-32 · `imageOutDir()` = dist/products/<product>, used by Dagger `image()`; test checks it against committed products' and recipes' build outputs; `nx affected -t lint test build` green; engine not run (no Docker) · branch claude/102-dagger-image-outdir

@@ -73,8 +73,6 @@ export interface ImageSpec {
   base: string;
   /** Where the built output is copied to in the runtime image. */
   dest: string;
-  /** Build output directory inside the workspace, relative to the product root. */
-  outDir: string;
   /** Container port. */
   port: number;
   /** Runtime user (non-root). */
@@ -88,12 +86,18 @@ const PRODUCT_PATTERN = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 /** Runtime image per product kind: static nginx-unprivileged for remotes, distroless Node for services. */
 export function imageSpec(kind: string): ImageSpec {
   if (kind === 'angular-remote') {
-    return { base: 'nginxinc/nginx-unprivileged:1.27-alpine', dest: '/usr/share/nginx/html', outDir: 'dist', port: 8080, user: '101', entrypoint: [] };
+    return { base: 'nginxinc/nginx-unprivileged:1.27-alpine', dest: '/usr/share/nginx/html', port: 8080, user: '101', entrypoint: [] };
   }
   if (kind === 'nestjs-service') {
-    return { base: 'gcr.io/distroless/nodejs22-debian12:nonroot', dest: '/app', outDir: 'dist', port: 3000, user: 'nonroot', entrypoint: ['/nodejs/bin/node', '/app/main.js'] };
+    return { base: 'gcr.io/distroless/nodejs22-debian12:nonroot', dest: '/app', port: 3000, user: 'nonroot', entrypoint: ['/nodejs/bin/node', '/app/main.js'] };
   }
   throw new Error(`unknown product kind: ${kind}`);
+}
+
+/** Build output directory of a product, relative to the workspace root (the recipes' `project.json` `outputs`). */
+export function imageOutDir(product: string): string {
+  if (!PRODUCT_PATTERN.test(product)) throw new Error(`invalid product name: ${product}`);
+  return `dist/products/${product}`;
 }
 
 /** argv that builds one product with Nx. */
