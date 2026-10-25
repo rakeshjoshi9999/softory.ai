@@ -59,10 +59,27 @@ jobs:
           if [ -f base-release-failed ]; then
             echo "**Impact report incomplete:** releasing the base branch's versions into the registry failed, so the dry-run assembly could not run. See the job log." >> impact.md
           fi
-          for m in $(git diff --name-only "origin/$BASE_REF"...HEAD -- materials | cut -d/ -f2 | sort -u); do
-            pnpm exec tsx tools/factory/src/cli.ts impact "materials/$m" --seed-registry >> impact.md \
-            || echo "**Impact report for \`$m\` failed.** See the job log." >> impact.md
-          done
+          while IFS= read -r m; do
+            case "$m" in
+              *[!A-Za-z0-9._-]*|'')
+                printf '**Impact analysis failed for `%s`:** unsupported material directory name.\n\n' "${m//[^A-Za-z0-9._ -]/?}" >> impact.md
+                continue ;;
+            esac
+            out="$(mktemp)"; err="$(mktemp)"
+            if pnpm exec tsx tools/factory/src/cli.ts impact "materials/$m" --seed-registry > "$out" 2> "$err"; then
+              cat "$out" >> impact.md
+            else
+              code=$?
+              {
+                echo "**Impact analysis failed for \`$m\`** (exit $code)."
+                echo
+                echo '```'
+                head -c 2000 "$err"
+                echo '```'
+                echo
+              } >> impact.md
+            fi
+          done < <(git diff --name-only -z "origin/$BASE_REF"...HEAD -- materials | tr '\0' '\n' | cut -d/ -f2 | sort -u)
       - name: Post PR comment
         uses: actions/github-script@v7
         with:
