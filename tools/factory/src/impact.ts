@@ -4,7 +4,8 @@ import { join } from 'node:path';
 import semver from 'semver';
 import { parse } from 'yaml';
 import { assemble, parseRef, readManifest } from './assemble.js';
-import { DEFAULT_GRAPH_URL, readLockfiles } from './graph.js';
+import { GraphError, graphClient } from './graph-client.js';
+import { readLockfiles } from './graph.js';
 import { DEFAULT_REGISTRY, packagesFor, release } from './release.js';
 
 export type Change = 'patch' | 'minor' | 'breaking';
@@ -77,13 +78,10 @@ export const realDeps = (root: string): ImpactDeps => ({
     }
   },
   async graphConsumers(material, version) {
-    const url = (process.env['FACTORY_GRAPH_URL'] ?? DEFAULT_GRAPH_URL).replace(/\/$/, '');
     try {
-      const res = await fetch(`${url}/materials/${material}/versions/${version}/consumers`);
-      if (!res.ok) return res.status === 404 ? [] : null;
-      return [...new Set(((await res.json()) as { product: string }[]).map((c) => c.product))];
-    } catch {
-      return null;
+      return [...new Set((await graphClient().listConsumers(material, version)).map((c) => c.product))];
+    } catch (e) {
+      return e instanceof GraphError && e.status === 404 ? [] : null;
     }
   },
   async registryReachable() {

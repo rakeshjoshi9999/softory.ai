@@ -2,7 +2,9 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-export const DEFAULT_GRAPH_URL = 'http://localhost:3000';
+import { GraphError, graphClient } from './graph-client.js';
+
+export { DEFAULT_GRAPH_URL } from './graph-client.js';
 
 export interface SyncResult {
   synced: { product: string; build: string; consumed: string[] }[];
@@ -25,17 +27,15 @@ const gitBuild = () => execFileSync('git', ['rev-parse', '--short', 'HEAD'], { e
 
 /** Posts every product lockfile to the graph service's `POST /ingest/lockfile`. Idempotent per build id. */
 export async function graphSync(opts: { root?: string; url?: string; build?: string } = {}): Promise<SyncResult> {
-  const url = (opts.url ?? process.env['FACTORY_GRAPH_URL'] ?? DEFAULT_GRAPH_URL).replace(/\/$/, '');
   const build = opts.build ?? gitBuild();
+  const graph = graphClient(opts.url);
   const synced: SyncResult['synced'] = [];
   for (const { product, packages } of readLockfiles(opts.root)) {
-    const res = await fetch(`${url}/ingest/lockfile`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ product, build, packages }),
-    });
-    if (!res.ok) throw new Error(`${product}: graph service answered ${res.status} ${await res.text()}`);
-    synced.push((await res.json()) as SyncResult['synced'][number]);
+    try {
+      synced.push(await graph.ingestLockfile({ product, build, packages }));
+    } catch (e) {
+      throw e instanceof GraphError ? new Error(`${product}: ${e.message}`) : e;
+    }
   }
   return { synced };
 }

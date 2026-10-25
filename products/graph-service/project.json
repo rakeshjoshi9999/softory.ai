@@ -16,14 +16,37 @@
       "options": {
         "command": "tsc -p products/graph-service/tsconfig.app.json && rm -rf dist/products/graph-service/migrations && cp -r products/graph-service/migrations dist/products/graph-service/migrations",
         "cwd": "{workspaceRoot}"
-      }
+      },
+      "dependsOn": [
+        "sync-generated"
+      ]
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
         "command": "vitest run --root . products/graph-service",
         "cwd": "{workspaceRoot}"
+      },
+      "dependsOn": [
+        "sync-generated"
+      ]
+    },
+    "sync-generated": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "{workspaceRoot}/materials/graph-api/generated/nest-server/**/*"
+      ],
+      "outputs": [
+        "{projectRoot}/src/generated/graph-api"
+      ],
+      "cache": true,
+      "options": {
+        "command": "rm -rf products/graph-service/src/generated/graph-api && mkdir -p products/graph-service/src/generated && cp -r materials/graph-api/generated/nest-server products/graph-service/src/generated/graph-api",
+        "cwd": "{workspaceRoot}"
       }
     }
-  }
+  },
+  "implicitDependencies": [
+    "graph-api"
+  ]
 }

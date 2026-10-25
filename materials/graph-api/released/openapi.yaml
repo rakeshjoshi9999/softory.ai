@@ -1,0 +1,327 @@
+openapi: 3.0.0
+info:
+  title: Graph API
+  version: 1.0.0
+  description: Record what the factory built and who consumes it.
+tags:
+  - name: Ingest
+  - name: Versions
+paths:
+  /ingest/lockfile:
+    post:
+      operationId: ingestLockfile
+      description: Record the factory packages a product build consumes.
+      parameters: []
+      responses:
+        '201':
+          description: Returned when a lockfile is recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LockfileIngested'
+        '400':
+          description: Returned when the request body is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      tags:
+        - Ingest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LockfileIngest'
+  /ingest/provenance:
+    post:
+      operationId: ingestProvenance
+      description: Record a package and its material version from a provenance statement.
+      parameters: []
+      responses:
+        '201':
+          description: Returned when a provenance statement is recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvenanceIngested'
+        '400':
+          description: Returned when the request body is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      tags:
+        - Ingest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvenanceStatement'
+  /materials/{name}/versions/{version}:
+    get:
+      operationId: getVersion
+      description: Get a material version's lifecycle state.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionInfo'
+        '404':
+          description: Returned when the material version is not in the graph.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      tags:
+        - Versions
+  /materials/{name}/versions/{version}/consumers:
+    get:
+      operationId: listConsumers
+      description: List every product build consuming the material version.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Consumer'
+        '404':
+          description: Returned when the material version is not in the graph.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      tags:
+        - Versions
+  /materials/{name}/versions/{version}/state:
+    put:
+      operationId: setVersionState
+      description: Set a material version's lifecycle state.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionInfo'
+        '400':
+          description: Returned when the request body is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Returned when the material version is not in the graph.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      tags:
+        - Versions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StateChange'
+components:
+  schemas:
+    Consumer:
+      type: object
+      required:
+        - product
+        - build
+        - package
+      properties:
+        product:
+          type: string
+          description: Product name.
+        build:
+          type: string
+          description: Build id.
+        package:
+          type: string
+          description: Package name and version consumed.
+      description: One product build consuming a material version through one package.
+    LockfileIngest:
+      type: object
+      required:
+        - product
+        - build
+        - packages
+      properties:
+        product:
+          type: string
+          minLength: 1
+          description: Product name.
+        build:
+          type: string
+          minLength: 1
+          description: Build id, e.g. a short git SHA.
+        packages:
+          type: object
+          additionalProperties:
+            type: string
+          description: Package name to pinned version.
+      description: A product's resolved factory packages for one build.
+    LockfileIngested:
+      type: object
+      required:
+        - product
+        - build
+        - consumed
+      properties:
+        product:
+          type: string
+          description: Product name.
+        build:
+          type: string
+          description: Build id.
+        consumed:
+          type: array
+          items:
+            type: string
+          description: Material versions consumed, as `<material>@<version>`.
+      description: What was recorded from a product lockfile.
+    Problem:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code.
+        message:
+          type: string
+          description: Human-readable explanation.
+      description: Error body returned for 4xx responses.
+    ProvenanceIngested:
+      type: object
+      required:
+        - package
+        - material
+        - version
+      properties:
+        package:
+          type: string
+          description: Package name and version, e.g. `@factory/orders-api-nest@1.0.1`.
+        material:
+          type: string
+          description: Material the package was emitted from.
+        version:
+          type: string
+          description: Material version.
+      description: What was recorded from a provenance statement.
+    ProvenanceStatement:
+      type: object
+      required:
+        - _type
+        - predicateType
+        - subject
+        - predicate
+      properties:
+        _type:
+          type: string
+          description: Statement type; must be https://in-toto.io/Statement/v1.
+        predicateType:
+          type: string
+          description: Predicate type; must be https://slsa.dev/provenance/v1.
+        subject:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          minItems: 1
+          description: Attested artifacts; the first is the package tarball.
+        predicate:
+          type: object
+          additionalProperties: {}
+          description: SLSA provenance predicate.
+      description: An in-toto Statement v1 carrying a SLSA provenance v1 predicate, as written by `factory release`.
+    StateChange:
+      type: object
+      required:
+        - state
+      properties:
+        state:
+          allOf:
+            - $ref: '#/components/schemas/VersionState'
+          description: New state.
+        reason:
+          type: string
+          minLength: 1
+          description: Why; required when recalling.
+      description: Request to change a version's state.
+    VersionInfo:
+      type: object
+      required:
+        - material
+        - version
+        - state
+      properties:
+        material:
+          type: string
+          description: Material name.
+        version:
+          type: string
+          description: Material version.
+        state:
+          allOf:
+            - $ref: '#/components/schemas/VersionState'
+          description: Current state; `released` unless set.
+        reason:
+          type: string
+          description: Why the state was set; always present for recalled versions.
+      description: State of a material version.
+    VersionState:
+      type: string
+      enum:
+        - draft
+        - released
+        - deprecated
+        - recalled
+      description: Lifecycle state of a material version.
+servers:
+  - url: http://localhost:3000
+    description: Local graph service
+    variables: {}

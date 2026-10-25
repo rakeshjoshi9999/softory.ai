@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { GraphController } from './graph.controller';
+import { IngestController, VersionsController } from './graph.controller';
 import { GraphStore } from './graph.store';
 import { startTestDatabase, TestDatabase } from './testing/pg-fixture';
 
@@ -35,7 +35,7 @@ describe('graph-service (PostgreSQL)', () => {
     pool = new Pool({ connectionString: db.url });
     const store = new GraphStore(pool);
     await store.migrate();
-    const mod = await Test.createTestingModule({ controllers: [GraphController], providers: [{ provide: GraphStore, useValue: store }] }).compile();
+    const mod = await Test.createTestingModule({ controllers: [IngestController, VersionsController], providers: [{ provide: GraphStore, useValue: store }] }).compile();
     app = mod.createNestApplication();
     await app.listen(0);
     base = (await app.getUrl()).replace('[::1]', 'localhost');
