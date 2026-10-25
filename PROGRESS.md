@@ -41,6 +41,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 - #74 P2-13 scan review fixes: PR open, awaiting review
 
+- #82 P2-18: draft PR open, pnpm pin fix pushed; needs a CI `dagger` job run to confirm
+
 ## Next up
 - #76 P1-11: merged (PR #93); all phase-1 issues are closed.
 - #75 Gate 1 review (needs-human): nothing left on the factory side. A human closes it as completed; the next planner run then sets the phase to 2.
@@ -55,6 +57,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
+- #82 P2-18: root cause of the failing `dagger` job was unpinned corepack pnpm 12 (ERR_PNPM_IGNORED_BUILDS on install). Pinned pnpm 9.15.9 in the container; the CI `dagger` job on PR #112 then passed (lint/test/build in the engine). The `verify` job switch stays a needs-human workflow change.
 - PR #114 (#84 P2-20) is behind main and conflicts in `tools/factory/src/recall.ts`: #89 (now on main) added the already-recalled check on raw `fetch`, while #84 moved the CLI to the generated typed graph client. Both changed the same logic, so I did not guess. Needs the #84 author to merge main and re-apply the idempotency check (graph state `recalled` skips deprecate + PUT) through the typed client; `PROGRESS.md`/`DECISIONS.md` conflicts are keep-both.
 - Phase record: PROGRESS.md still says Phase 1 and no `Gate 1 review` issue existed, yet Phase 2 issues were relabelled `ready` and #11–#21 are already done. The planner did not change the phase. Closing #75 makes the record match.
 - #21 P2-11: the nightly job is provided at `tools/factory/ci/nightly-scan.yml` (copy to `.github/workflows/`, off-limits for me). It scans the attestation store (`FACTORY_ATTESTATION_STORE`), which CI must restore; images are scanned only via the Dagger `scan --image`. Trivy and the Dagger `scan` function were never run (no trivy/Docker here); tests use a fixture Trivy report.
@@ -73,6 +76,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-24 · builder · synced draft PR #112 (#82) with main (merge, PROGRESS/DECISIONS kept both sides, affected green); closed stale #83 (merged via #113), unblocks #84 P2-20 for the next run · branch claude/82-dagger-run
+- 2026-10-24 · builder · no open PRs; closed stale #81 (merged via #111); #82 P2-18 · dagger job failed on corepack's default pnpm 12 (ignored build scripts); pinned pnpm 9.15.9 + test; engine not runnable here; `nx affected -t lint test build` green · branch claude/82-dagger-run · draft PR
 - 2026-10-24 · #89 P2-25 · recall skips registry/graph writes when graph state is recalled and dedupes open `recall` issues by title (re-run opens only missing ones); 3 new tests; `nx affected -t lint test build` green · branch claude/89-recall-idempotent
 - 2026-10-24 · planner (2nd run) · #75 Gate 1 review still open (P1-11 merged via #93, all phase-1 issues closed), so phase left at 1 and nothing relabelled; phase-2 queue healthy (#89, #98-#109 ready), no new tasks; no blocked/in-progress issue idle for 24 h (#82/#85/#84/#86/#87/#88 all pushed today); re-run of gate1-demo.sh on main b1c0331 could not complete here: oasdiff v1.32.1 could not be fetched (Go module proxy blocked in this sandbox, and it needs Go >= 1.26), not a code failure · branch claude/planner-2026-10-24
 - 2026-10-24 · #83 P2-19 · built graph-service resolves `migrations/` next to `ext/` (build target copies them into dist); test runs the real nx build output from a temp dir outside the repo via node main.js: migrates + /health ok, fails without fix; Dagger image untouched (#102/#103 cover its outDir/node_modules); `nx affected -t lint test build` green · branch claude/83-graph-service-built
