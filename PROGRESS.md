@@ -79,6 +79,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - Two builder sessions both did #2 (PRs #50 and #51). Run one builder at a time, or have it claim an issue (label/assignee) before starting.
 - oasdiff needs Go on the CI runner (present on ubuntu-latest). OK, or prefer a pinned Docker image?
 - oasdiff v1.32.1 needs Go >= 1.26; with an older Go, `go run` tries to download a toolchain from golang.org (blocked in the planner sandbox, 2026-10-24). Make sure CI's Go is >= 1.26 (actions/setup-go) or pin an oasdiff release binary/image.
+- PR #128 (#99 P2-29) criterion 3: needs a human with a Dagger engine to create a nested `products/<x>/node_modules/marker`, run `dagger call -m pipelines/dagger ci --src=.` (or a container listing) and post the output showing the marker is absent; then re-label `needs-review`. Builder cannot run Dagger here.
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
@@ -143,3 +144,4 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · builder · #98 (P2-28): merged main into PR #124, `nx affected -t lint test build` green, marked ready + needs-review · branch claude/98-dagger-typecheck
 - 2026-10-25 · #99 P2-29 · `SOURCE_EXCLUDES` (`**/node_modules`, `**/.nx`, `**/dist`) in plan.ts used by workspace(), 2 tests; criterion 3 (Dagger run with nested node_modules) not run, no Dagger/Docker here; `nx affected -t lint test build` green · branch claude/99-dagger-excludes
 - 2026-10-25 · #90 P2-26 · proposed ci.yml at tools/factory/ci/ci.yml (kubeconform + Dagger from pinned release archives, SHA-256 verified; checksums confirmed against upstream files); impact.yml already used `env: BASE_REF` (criterion 2 met on main); 3 new tests (fail without file); `nx affected -t lint test build` green · branch claude/90-ci-hardening
+- 2026-10-25 · builder · synced PR #128 (#99) with main (merge, PROGRESS/DECISIONS kept both sides, affected green); #127 current; #128 changes-requested needs Dagger-engine evidence from a human, so no code fix possible · branch claude/99-dagger-excludes
