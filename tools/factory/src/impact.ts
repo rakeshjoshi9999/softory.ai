@@ -37,7 +37,7 @@ export interface ImpactReport {
 export interface ImpactDeps {
   /** Runs oasdiff with the given args and returns stdout (JSON). */
   oasdiff(args: string[]): string;
-  /** Product names consuming `material`, or null when the graph is unreachable. */
+  /** Product names consuming `material@version`, or null when the graph is unreachable. */
   graphConsumers(material: string, version: string): Promise<string[] | null>;
   /** True when the registry answers; the dry-run assembly is skipped otherwise. */
   registryReachable(): Promise<boolean>;
@@ -132,11 +132,17 @@ export async function impact(materialDir: string, opts: { root?: string; deps?: 
   const { change, findings } = classify(deps, released, generated);
   const next = bump(meta.version, change);
 
-  // The graph knows who consumes the version in use today; lockfiles are the fallback when it is down.
-  const fromGraph = await deps.graphConsumers(meta.name, await currentPin(root, meta.name, meta.version));
-  const lock = readLockfiles(root).filter((l) => Object.keys(l.packages).some((p) => p.startsWith(`@factory/${meta.name}-`)));
-  const names = fromGraph ?? lock.map((l) => l.product);
-  const via: ProductImpact['via'] = fromGraph ? 'graph' : 'lockfile';
+  // Lockfiles are the source of truth for what is pinned. The graph is asked about every distinct pinned
+  // version; an unreachable, empty or 404 answer never hides a consumer a lockfile shows.
+  const lock = readLockfiles(root)
+    .map((l) => ({ product: l.product, pin: pinOf(l.packages, meta.name) }))
+    .filter((l): l is { product: string; pin: string } => l.pin !== undefined);
+  const graphNames = new Set<string>();
+  for (const pin of new Set(lock.length ? lock.map((l) => l.pin) : [meta.version])) {
+    for (const name of (await deps.graphConsumers(meta.name, pin)) ?? []) graphNames.add(name);
+  }
+  const names = [...new Set([...graphNames, ...lock.map((l) => l.product)])];
+  const via = (product: string): ProductImpact['via'] => (graphNames.has(product) ? 'graph' : 'lockfile');
 
   const reachable = await deps.registryReachable();
   if (reachable && opts.seed) deps.seedRegistry?.(meta.name, next);
@@ -150,7 +156,7 @@ export async function impact(materialDir: string, opts: { root?: string; deps?: 
     const rangeAccepts = range ? semver.satisfies(next, semver.validRange(range) ? range : `^${range}`) : false;
     products.push({
       product,
-      via,
+      via: via(product),
       rangeAccepts,
       assemble: !existsSync(manifestPath)
         ? { ok: false, detail: 'no product.yaml' }
@@ -164,14 +170,9 @@ export async function impact(materialDir: string, opts: { root?: string; deps?: 
   return { material: meta.name, current: meta.version, next, change, findings, products, dryRun: reachable ? 'run' : 'skipped', ok };
 }
 
-/** Version of the material the lockfiles pin today (falls back to the material's own version). */
-async function currentPin(root: string, material: string, fallback: string): Promise<string> {
-  for (const l of readLockfiles(root)) {
-    const v = l.packages[`@factory/${material}-nest`] ?? l.packages[`@factory/${material}-angular`];
-    if (v) return v;
-  }
-  return fallback;
-}
+/** Version of the material a lockfile pins, if any. */
+const pinOf = (packages: Record<string, string>, material: string): string | undefined =>
+  packages[`@factory/${material}-nest`] ?? packages[`@factory/${material}-angular`];
 
 const mark = (ok: boolean) => (ok ? 'pass' : 'FAIL');
 
