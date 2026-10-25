@@ -1,6 +1,6 @@
 # Progress
 
-Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt entirely from its spec)
+Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches 3 products with no manual steps)
 
 ## Done
 - P1-01 scaffold: pnpm + Nx 24 workspace, five folders with READMEs, module-boundary lint rule + test (merged, PR #49)
@@ -45,7 +45,8 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Next up
 - #76 P1-11: merged (PR #93); all phase-1 issues are closed.
-- #75 Gate 1 review (needs-human): nothing left on the factory side. A human closes it as completed; the next planner run then sets the phase to 2.
+- #75 Gate 1 review: closed as completed by a human (2026-10-25); phase set to 2.
+- #22 P2-12 Gate 2 demo once its Blocked-by tasks are done.
 
 ## Gate 1 evidence (P1-10)
 - Contract test `materials/orders-api/test/contract.spec.ts` (runs in `nx test orders-api`, so in CI): generated Angular client over real HTTP against a Nest app on the generated controller base; every body is checked against `generated/openapi.yaml`.
@@ -62,7 +63,6 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 - #88 P2-24: shared test support is `products/orders-service/test-support/live-service.ts` (outside `src/`, so not built); it and the consumer specs load emitted material code by computed path because module boundaries forbid static imports. Tests use the generated client/Nest base from `materials/orders-api/generated`, not the registry-installed packages (CI has no registry).
 - #82 P2-18: root cause of the failing `dagger` job was unpinned corepack pnpm 12 (ERR_PNPM_IGNORED_BUILDS on install). Pinned pnpm 9.15.9 in the container; the CI `dagger` job on PR #112 then passed (lint/test/build in the engine). The `verify` job switch stays a needs-human workflow change.
 - PR #114 (#84 P2-20) is behind main and conflicts in `tools/factory/src/recall.ts`: #89 (now on main) added the already-recalled check on raw `fetch`, while #84 moved the CLI to the generated typed graph client. Both changed the same logic, so I did not guess. Needs the #84 author to merge main and re-apply the idempotency check (graph state `recalled` skips deprecate + PUT) through the typed client; `PROGRESS.md`/`DECISIONS.md` conflicts are keep-both.
-- Phase record: PROGRESS.md still says Phase 1 and no `Gate 1 review` issue existed, yet Phase 2 issues were relabelled `ready` and #11–#21 are already done. The planner did not change the phase. Closing #75 makes the record match.
 - #21 P2-11: the nightly job is provided at `tools/factory/ci/nightly-scan.yml` (copy to `.github/workflows/`, off-limits for me). It scans the attestation store (`FACTORY_ATTESTATION_STORE`), which CI must restore; images are scanned only via the Dagger `scan --image`. Trivy and the Dagger `scan` function were never run (no trivy/Docker here); tests use a fixture Trivy report.
 - #18 P2-08: recall opens issues via the GitHub REST API using `GITHUB_TOKEN` + `FACTORY_RECALL_REPO` (or `GITHUB_REPOSITORY`); never run against real GitHub or Verdaccio here (mocked / injected). Re-running a recall opens duplicate issues.
 - #17 P2-07: Renovate needs a real platform (GitHub App/self-hosted run) with network access to the registry to open PRs; `renovate.json` points at localhost:4873 for now. The dry run uses `--platform=local`, which only computes upgrades. The Renovate workflow/app is off-limits for me (`.github/workflows/`). Also the PR auto-merge bumps the lockfile pin only; re-assembly after merge is not automated yet.
@@ -79,6 +79,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-25 · planner · #75 Gate 1 review closed as completed by rakeshjoshi9999 (2026-10-25T01:58Z), so phase set to 2 (Supply chain); no open or closed phase-2 issue was labelled `planned`, so nothing relabelled; resolved "Phase record" question removed; stopped per planner step 2 · branch claude/planner-2026-10-25
 - 2026-10-24 · #84 P2-20 · materials/graph-api (TypeSpec, Spectral, oasdiff, emitters), graph-service extends generated Ingest/Versions controllers (synced into gitignored src/generated), factory CLI uses one typed graph client checked against the spec; `nx affected -t lint test build` green (44 tasks) · branch claude/gifted-mendel-iqp4uc
 - 2026-10-24 · builder · PR #112 (#82) already current with main · no action
 - 2026-10-25 · #85 P2-21 · second platform-e2e run: policy apply refused by Kyverno's webhook (connection refused) right after the admission controller rolled out; platform-up now retries the apply up to 24×5 s before the Ready wait · needs another platform-e2e run · branch claude/85-product-charts
