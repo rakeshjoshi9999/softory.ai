@@ -27,7 +27,7 @@ const deps = (breaking: unknown[], changelog: unknown[], graph: string[] | null 
   oasdiff: (args) => JSON.stringify(args[0] === 'breaking' ? breaking : changelog),
   graphConsumers: async () => graph,
   registryReachable: async () => true,
-  dryAssemble: async () => ({ ok: true, detail: 'would write 0 file(s)' }),
+  dryAssemble: async () => ({ status: 'ok', detail: 'would write 0 file(s)' }),
   runTests: () => ({ ok: true, detail: 'contract tests passed' }),
 });
 
@@ -74,7 +74,7 @@ describe('impact', () => {
     const d: ImpactDeps = {
       ...deps([], [{ level: 1, text: 'added field' }]),
       seedRegistry: (m, v) => calls.push(`seed ${m}@${v}`),
-      dryAssemble: async () => (calls.push('assemble'), { ok: true, detail: 'ok' }),
+      dryAssemble: async () => (calls.push('assemble'), { status: 'ok', detail: 'ok' }),
     };
     await impact('materials/orders-api', { root, deps: d });
     expect(calls).not.toContain('seed orders-api@1.1.0');
@@ -87,6 +87,23 @@ describe('impact', () => {
     const r = await impact('materials/orders-api', { root, deps: d });
     expect(r).toMatchObject({ dryRun: 'skipped', ok: true });
     expect(renderMarkdown(r)).toContain('skipped');
+  });
+
+  it('reports an unreachable registry per consumer as skipped without failing the report', async () => {
+    const d = { ...deps([], []), dryAssemble: async () => ({ status: 'skipped' as const, detail: 'registry unreachable' }) };
+    const r = await impact('materials/orders-api', { root, deps: d });
+    expect(r.ok).toBe(true);
+    expect(r.products.every((p) => p.assemble.status === 'skipped')).toBe(true);
+    const md = renderMarkdown(r);
+    expect(md).toContain('skipped (registry unreachable)');
+    expect(md).not.toContain('FAIL');
+  });
+
+  it('a manifest or recipe error still fails the consumer', async () => {
+    const d = { ...deps([], []), dryAssemble: async () => ({ status: 'failed' as const, detail: 'unknown recipe' }) };
+    const r = await impact('materials/orders-api', { root, deps: d });
+    expect(r.ok).toBe(false);
+    expect(renderMarkdown(r)).toContain('FAIL (unknown recipe)');
   });
 
   it('reports a failing consumer test', async () => {
@@ -131,5 +148,22 @@ describe('realDeps graphConsumers', () => {
   it('maps other failures to null (graph unreachable)', async () => {
     stub(500, {});
     expect(await realDeps(root).graphConsumers('orders-api', '1.0.1')).toBeNull();
+  });
+});
+
+describe('realDeps dryAssemble', () => {
+  const repo = join(__dirname, '../../..');
+  const manifest = join(repo, 'products/orders-ui/product.yaml');
+
+  it('returns skipped when the registry is unreachable', async () => {
+    vi.stubEnv('FACTORY_REGISTRY', 'http://127.0.0.1:1/');
+    expect(await realDeps(repo).dryAssemble(manifest)).toEqual({ status: 'skipped', detail: 'registry unreachable' });
+    vi.unstubAllEnvs();
+  });
+
+  it('returns failed for a manifest that does not exist', async () => {
+    vi.stubEnv('FACTORY_REGISTRY', 'http://127.0.0.1:1/');
+    expect((await realDeps(repo).dryAssemble(join(repo, 'products/nope/product.yaml'))).status).toBe('failed');
+    vi.unstubAllEnvs();
   });
 });
