@@ -1,5 +1,5 @@
 import { dag, Container, Directory, File, Secret, func, object } from '@dagger.io/dagger';
-import { blockCommand, pnpmSetupCommands, ciCommands, imageSpec, productBuildCommand, scanCommand, SOURCE_EXCLUDES, sbomCommand, signCommand, signImageCommand } from './plan.js';
+import { assertWorkspaceEntries, blockCommand, pnpmSetupCommands, ciCommands, imageSpec, productBuildCommand, scanCommand, SOURCE_EXCLUDES, sbomCommand, signCommand, signImageCommand } from './plan.js';
 
 const NODE_IMAGE = 'node:22-bookworm';
 const SYFT_IMAGE = 'anchore/syft:v1.18.1';
@@ -10,7 +10,8 @@ const COSIGN_IMAGE = 'gcr.io/projectsigstore/cosign:v2.4.1';
 export class Factory {
   /** Node + pnpm container with the workspace mounted and dependencies installed. */
   @func()
-  workspace(src: Directory): Container {
+  async workspace(src: Directory): Promise<Container> {
+    assertWorkspaceEntries(await src.entries(), 'the source directory');
     const base = pnpmSetupCommands().reduce((c, argv) => c.withExec(argv), dag.container().from(NODE_IMAGE));
     return base
       .withMountedCache('/root/.local/share/pnpm/store', dag.cacheVolume('pnpm-store'))
@@ -22,25 +23,25 @@ export class Factory {
   /** Lint (all projects, or affected ones when `base` is given). */
   @func()
   async lint(src: Directory, base?: string): Promise<string> {
-    return this.workspace(src).withExec(blockCommand('lint', base)).stdout();
+    return (await this.workspace(src)).withExec(blockCommand('lint', base)).stdout();
   }
 
   /** Unit tests. */
   @func()
   async test(src: Directory, base?: string): Promise<string> {
-    return this.workspace(src).withExec(blockCommand('test', base)).stdout();
+    return (await this.workspace(src)).withExec(blockCommand('test', base)).stdout();
   }
 
   /** Build. */
   @func()
   async build(src: Directory, base?: string): Promise<string> {
-    return this.workspace(src).withExec(blockCommand('build', base)).stdout();
+    return (await this.workspace(src)).withExec(blockCommand('build', base)).stdout();
   }
 
   /** lint, test and build; any failing block fails the call (non-zero exit). */
   @func()
   async ci(src: Directory, base?: string): Promise<string> {
-    let ctr = this.workspace(src);
+    let ctr = await this.workspace(src);
     for (const cmd of ciCommands(base)) ctr = ctr.withExec(cmd);
     return ctr.stdout();
   }
@@ -72,9 +73,9 @@ export class Factory {
 
   /** OCI image of one product: built with Nx, copied onto the kind's runtime base (non-root). */
   @func()
-  image(src: Directory, product: string, kind: string): Container {
+  async image(src: Directory, product: string, kind: string): Promise<Container> {
     const spec = imageSpec(kind);
-    const out = this.workspace(src)
+    const out = (await this.workspace(src))
       .withExec(productBuildCommand(product))
       .directory(`/work/products/${product}/${spec.outDir}`);
     const ctr = dag
@@ -89,7 +90,7 @@ export class Factory {
   /** Publish the image, then sign the pushed digest with cosign (key from a secret). Returns the digest reference. */
   @func()
   async signedImage(src: Directory, product: string, kind: string, address: string, key: Secret): Promise<string> {
-    const ref = await this.image(src, product, kind).publish(address);
+    const ref = await (await this.image(src, product, kind)).publish(address);
     await dag
       .container()
       .from(COSIGN_IMAGE)
