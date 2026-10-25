@@ -47,7 +47,16 @@ fi
 # Indent the PEM to sit under the `publicKeys: |-` block in the policy.
 pemfile="$(mktemp)"
 sed 's/^/                      /' "$PUBKEY_FILE" >"$pemfile"
-sed -e "/@@COSIGN_PUBLIC_KEY@@/{r $pemfile" -e 'd}' deploy/platform/kyverno/require-signed-images.yaml | kubectl apply -f -
+policyfile="$(mktemp)"
+sed -e "/@@COSIGN_PUBLIC_KEY@@/{r $pemfile" -e 'd}' deploy/platform/kyverno/require-signed-images.yaml >"$policyfile"
+# Kyverno's own webhook validates the policy, and it can refuse connections for a while after the
+# deployment reports rolled out. Retry the apply (bounded) instead of failing on the first refusal.
+for i in $(seq 1 24); do
+  if kubectl apply -f "$policyfile"; then break; fi
+  [ "$i" -eq 24 ] && { echo "platform-up: Kyverno webhook never accepted the policy" >&2; exit 1; }
+  echo "platform-up: Kyverno webhook not ready (attempt $i/24), retrying in 5s" >&2
+  sleep 5
+done
 # Applying the policy returns before Kyverno has wired it into its admission webhooks; until it is
 # Ready, pods are admitted unchecked. Wait so "Kyverno enforcing" below is true.
 kubectl wait --for=condition=Ready clusterpolicy/require-signed-images --timeout=180s

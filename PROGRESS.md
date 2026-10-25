@@ -79,6 +79,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-25 · #85 P2-21 · second platform-e2e run: policy apply refused by Kyverno's webhook (connection refused) right after the admission controller rolled out; platform-up now retries the apply up to 24×5 s before the Ready wait · needs another platform-e2e run · branch claude/85-product-charts
 - 2026-10-25 · #85 P2-21 · first platform-e2e run (human-triggered): platform up OK, unsigned image admitted 2 s after the policy was applied. platform-up now waits for `clusterpolicy/require-signed-images` Ready; platform-test retries an admitted pod up to 12×5 s before failing; spec test fails without it · needs another platform-e2e run · branch claude/85-product-charts
 - 2026-10-24 · #85 P2-21 · graph-service chart from recipe templates, chart-check.sh covers products/*/chart, test that every product has a chart (fails without), architecture doc names `products/*/chart`; kind e2e not run (needs human + workflow); `nx affected -t lint test build` green · branch claude/85-product-charts
 - 2026-10-24 · #86 P2-22 · `factory propagate <material>@<version> [--dry-run]` (assemble, test, one PR per consumer, patch-only `claude-approved`, idempotent), 8 tests; `nx affected -t lint test build` see PR · branch claude/86-propagate
