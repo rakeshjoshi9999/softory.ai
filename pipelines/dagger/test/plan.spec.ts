@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
-import { assertWorkspace, blockCommand, ciCommands, sbomCommand, signCommand } from '../src/plan.js';
+import { assertWorkspace, assertWorkspaceEntries, blockCommand, ciCommands, sbomCommand, signCommand } from '../src/plan.js';
 
 const fixture = join(fileURLToPath(new URL('.', import.meta.url)), 'fixture-workspace');
 
@@ -65,5 +65,17 @@ describe('SOURCE_EXCLUDES', () => {
   it('is what index.ts passes to withDirectory', () => {
     const src = readFileSync(join(fileURLToPath(new URL('../src/index.ts', import.meta.url))), 'utf8');
     expect(src).toContain('exclude: [...SOURCE_EXCLUDES]');
+  });
+});
+
+describe('Dagger workspace guard', () => {
+  it('rejects a directory listing without the workspace files', () => {
+    expect(() => assertWorkspaceEntries(['package.json', 'nx.json'], 'src')).toThrow(/not a factory workspace: pnpm-lock.yaml missing/);
+    expect(() => assertWorkspaceEntries(['package.json', 'nx.json', 'pnpm-lock.yaml'], 'src')).not.toThrow();
+  });
+  it('runs before the container is built in index.ts', () => {
+    const src = readFileSync(join(fileURLToPath(new URL('../src/index.ts', import.meta.url))), 'utf8');
+    expect(src.indexOf('assertWorkspaceEntries(await src.entries()')).toBeGreaterThan(0);
+    expect(src.indexOf('assertWorkspaceEntries(await src.entries()')).toBeLessThan(src.indexOf('pnpmSetupCommands().reduce'));
   });
 });

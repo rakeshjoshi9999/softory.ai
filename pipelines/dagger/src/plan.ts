@@ -19,11 +19,18 @@ export function pnpmSetupCommands(): string[][] {
 
 const BASE_PATTERN = /^[A-Za-z0-9._\/-]+$/;
 
+const WORKSPACE_FILES = ['package.json', 'nx.json', 'pnpm-lock.yaml'] as const;
+
+/** Throws unless `entries` (the top-level names of a source directory) include the factory workspace files. */
+export function assertWorkspaceEntries(entries: readonly string[], where: string): void {
+  for (const f of WORKSPACE_FILES) {
+    if (!entries.includes(f)) throw new Error(`not a factory workspace: ${f} missing in ${where}`);
+  }
+}
+
 /** Throws unless `dir` looks like a factory workspace (pnpm + Nx). */
 export function assertWorkspace(dir: string): void {
-  for (const f of ['package.json', 'nx.json', 'pnpm-lock.yaml']) {
-    if (!existsSync(join(dir, f))) throw new Error(`not a factory workspace: ${f} missing in ${dir}`);
-  }
+  assertWorkspaceEntries(WORKSPACE_FILES.filter((f) => existsSync(join(dir, f))), dir);
   const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { private?: boolean };
   if (typeof pkg !== 'object' || pkg === null) throw new Error('package.json is not an object');
 }
