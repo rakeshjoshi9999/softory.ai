@@ -1,8 +1,8 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { beforeAll, describe, expect, it } from 'vitest';
-import { classify, impact, renderMarkdown, type ImpactDeps } from './impact.js';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { classify, impact, realDeps, renderMarkdown, type ImpactDeps } from './impact.js';
 
 let root: string;
 const PRODUCTS = ['orders-admin-ui', 'orders-service', 'orders-ui'];
@@ -30,6 +30,8 @@ const deps = (breaking: unknown[], changelog: unknown[], graph: string[] | null 
   dryAssemble: async () => ({ ok: true, detail: 'would write 0 file(s)' }),
   runTests: () => ({ ok: true, detail: 'contract tests passed' }),
 });
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe('classify', () => {
   it('no differences is a patch', () => expect(classify(deps([], []), 'a', 'b')).toEqual({ change: 'patch', findings: [] }));
@@ -90,5 +92,44 @@ describe('impact', () => {
   it('reports a failing consumer test', async () => {
     const d = { ...deps([], []), runTests: () => ({ ok: false, detail: 'boom' }) };
     expect((await impact('materials/orders-api', { root, deps: d })).ok).toBe(false);
+  });
+
+  it('lists lockfile consumers when the graph answers with an empty list', async () => {
+    const r = await impact('materials/orders-api', { root, deps: deps([{ level: 3, text: 'removed currency' }], [], []) });
+    expect(r.products.map((p) => [p.product, p.via])).toEqual(PRODUCTS.map((p) => [p, 'lockfile']));
+    expect(r.ok).toBe(false);
+    expect(renderMarkdown(r)).not.toContain('No consuming products found');
+  });
+
+  it('queries the graph for every pinned version and finds products on different versions', async () => {
+    const other = mkdtempSync(join(tmpdir(), 'impact-pins-'));
+    const w = (rel: string, content: string) => {
+      mkdirSync(dirname(join(other, rel)), { recursive: true });
+      writeFileSync(join(other, rel), content);
+    };
+    w('materials/orders-api/material.yaml', 'metadata:\n  name: orders-api\n  version: 1.0.1\n');
+    w('materials/orders-api/released/openapi.yaml', 'a');
+    w('materials/orders-api/generated/openapi.yaml', 'b');
+    const pins: Record<string, string> = { 'old-ui': '1.0.0', 'new-ui': '1.0.1' };
+    for (const [p, v] of Object.entries(pins)) w(`products/${p}/product.lock.json`, JSON.stringify({ packages: { '@factory/orders-api-nest': v } }));
+    const asked: string[] = [];
+    const d: ImpactDeps = { ...deps([], []), graphConsumers: async (_m, v) => (asked.push(v), v === '1.0.0' ? ['old-ui'] : []) };
+    const r = await impact('materials/orders-api', { root: other, deps: d });
+    expect(asked.sort()).toEqual(['1.0.0', '1.0.1']);
+    expect(r.products.map((p) => [p.product, p.via])).toEqual([['new-ui', 'lockfile'], ['old-ui', 'graph']]);
+  });
+});
+
+describe('realDeps graphConsumers', () => {
+  const stub = (status: number, body: unknown) => vi.stubGlobal('fetch', async () => new Response(JSON.stringify(body), { status }));
+
+  it('maps a 404 to an empty list', async () => {
+    stub(404, { message: 'unknown' });
+    expect(await realDeps(root).graphConsumers('orders-api', '1.0.1')).toEqual([]);
+  });
+
+  it('maps other failures to null (graph unreachable)', async () => {
+    stub(500, {});
+    expect(await realDeps(root).graphConsumers('orders-api', '1.0.1')).toBeNull();
   });
 });

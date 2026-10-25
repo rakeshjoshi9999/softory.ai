@@ -53,6 +53,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - #104 P2-34 numeric non-root uid: PR open, needs-review (helm not run, not installed)
 
 - #105 P2-35 policy rejection test with positive control: PR open, needs-review (kind run not possible here)
+- #108 P2-38 impact falls back to / unions lockfile consumers: PR open, needs-review
 
 ## Next up
 - #76 P1-11: merged (PR #93); all phase-1 issues are closed.
@@ -165,3 +166,4 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · builder · PR #136 (#105) review fix: require-signed-images policy ignores tlog/SCT so the tlog-less positive control is admitted; platform-e2e not run (no cluster); `nx affected -t lint test build` below · branch claude/105-policy-proof
 - 2026-10-25 · #106 P2-36 · platform-up.sh checks cosign up front when FACTORY_COSIGN_PUBLIC_KEY is unset (+ test running the script with fake tools; failed before); policy-Ready wait already on main (180s); `nx affected -t lint test build` green; kind 3x back-to-back not run (no cluster) · branch claude/106-platform-up-wait
 - 2026-10-25 · builder · synced PR #136 (#105) with main (kept both sides in PROGRESS/DECISIONS/platform.spec.ts); `nx affected -t lint test build` exit 0; pushed. Note: #106 still labelled in-progress/open although its fix merged in #137 — a human should close it · branch claude/105-policy-proof
+- 2026-10-25 · #108 P2-38 · impact unions graph and lockfile consumers, graph queried per pinned version, 4 new tests (3 fail on old code); `nx affected -t lint test build` green · branch claude/108-impact-lockfile-fallback
