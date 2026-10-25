@@ -1,3 +1,6 @@
+import { spawnSync } from 'node:child_process';
+import { chmodSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -60,5 +63,21 @@ describe('local platform (kind + Argo CD + Kyverno)', () => {
     const test = read('scripts/platform-test.sh');
     expect(test).toMatch(/for i in \$\(seq 1 "\$attempts"\)/);
     expect(test).toContain('admitted on all $attempts attempts');
+  });
+
+  it('platform-up checks cosign up front unless a public key is supplied', () => {
+    const bin = mkdtempSync(join(tmpdir(), 'platform-up-bin-'));
+    // Only docker, kind and kubectl exist; any call past the precheck would hit the fake docker.
+    for (const t of ['docker', 'kind', 'kubectl']) {
+      writeFileSync(join(bin, t), '#!/bin/sh\necho "$0 called past precheck" >&2\nexit 42\n');
+      chmodSync(join(bin, t), 0o755);
+    }
+    const run = (env: Record<string, string>) =>
+      spawnSync('/bin/bash', [join(root, 'scripts/platform-up.sh')], { env: { PATH: bin, ...env }, encoding: 'utf8' });
+    const missing = run({});
+    expect(missing.status).toBe(1);
+    expect(missing.stderr).toContain('cosign is required');
+    const withKey = run({ FACTORY_COSIGN_PUBLIC_KEY: '/dev/null' });
+    expect(withKey.stderr).not.toContain('cosign is required');
   });
 });

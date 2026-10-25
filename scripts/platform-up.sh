@@ -14,6 +14,10 @@ PUBKEY_FILE="${FACTORY_COSIGN_PUBLIC_KEY:-}"
 for tool in docker kind kubectl; do
   command -v "$tool" >/dev/null || { echo "platform-up: $tool is required" >&2; exit 1; }
 done
+# A throwaway key is generated with cosign when no public key is supplied; fail before building anything.
+if [ -z "$PUBKEY_FILE" ]; then
+  command -v cosign >/dev/null || { echo "platform-up: cosign is required when FACTORY_COSIGN_PUBLIC_KEY is unset" >&2; exit 1; }
+fi
 
 if [ "$(docker inspect -f '{{.State.Running}}' "$REG_NAME" 2>/dev/null || true)" != "true" ]; then
   docker rm -f "$REG_NAME" >/dev/null 2>&1 || true
