@@ -48,4 +48,7 @@ fi
 pemfile="$(mktemp)"
 sed 's/^/                      /' "$PUBKEY_FILE" >"$pemfile"
 sed -e "/@@COSIGN_PUBLIC_KEY@@/{r $pemfile" -e 'd}' deploy/platform/kyverno/require-signed-images.yaml | kubectl apply -f -
+# Applying the policy returns before Kyverno has wired it into its admission webhooks; until it is
+# Ready, pods are admitted unchecked. Wait so "Kyverno enforcing" below is true.
+kubectl wait --for=condition=Ready clusterpolicy/require-signed-images --timeout=180s
 echo "platform-up: ready (registry localhost:${REG_PORT}, Argo CD in ns argocd, Kyverno enforcing)"
