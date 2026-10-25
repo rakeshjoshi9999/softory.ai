@@ -1,5 +1,5 @@
 import { dag, Container, Directory, File, Secret, func, object } from '@dagger.io/dagger';
-import { assertWorkspaceEntries, blockCommand, pnpmSetupCommands, ciCommands, imageSpec, productBuildCommand, scanCommand, SOURCE_EXCLUDES, sbomCommand, signCommand, signImageCommand } from './plan.js';
+import { assertWorkspaceEntries, blockCommand, pnpmSetupCommands, ciCommands, imageOutDir, imageSpec, productBuildCommand, scanCommand, SOURCE_EXCLUDES, sbomCommand, signCommand, signImageCommand } from './plan.js';
 
 const NODE_IMAGE = 'node:22-bookworm';
 const SYFT_IMAGE = 'anchore/syft:v1.18.1';
@@ -77,7 +77,7 @@ export class Factory {
     const spec = imageSpec(kind);
     const out = (await this.workspace(src))
       .withExec(productBuildCommand(product))
-      .directory(`/work/products/${product}/${spec.outDir}`);
+      .directory(`/work/${imageOutDir(product)}`);
     const ctr = dag
       .container()
       .from(spec.base)
