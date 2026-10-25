@@ -100,6 +100,55 @@ export function imageOutDir(product: string): string {
   return `dist/products/${product}`;
 }
 
+/** Packages a built NestJS service requires at runtime (everything its `main.js` and the recipe templates import). */
+export const SERVICE_RUNTIME_DEPENDENCIES: readonly string[] = [
+  '@nestjs/common',
+  '@nestjs/core',
+  '@nestjs/platform-express',
+  '@opentelemetry/api',
+  '@opentelemetry/exporter-trace-otlp-http',
+  '@opentelemetry/sdk-node',
+  'class-transformer',
+  'class-validator',
+  'reflect-metadata',
+  'rxjs',
+];
+
+/** Node image used only to install production dependencies (the distroless runtime has no npm). */
+export const DEPS_IMAGE = 'node:22-slim';
+
+/** package.json text for the runtime install: versions come from the workspace root so the image matches what was tested. */
+export function runtimePackageJson(root: { dependencies?: Record<string, string>; devDependencies?: Record<string, string> }, names: readonly string[] = SERVICE_RUNTIME_DEPENDENCIES): string {
+  const known = { ...root.devDependencies, ...root.dependencies };
+  const dependencies: Record<string, string> = {};
+  for (const name of [...names].sort()) {
+    const range = known[name];
+    if (range === undefined) throw new Error(`runtime dependency ${name} is not declared in the root package.json`);
+    dependencies[name] = range;
+  }
+  return `${JSON.stringify({ name: 'runtime-deps', private: true, dependencies }, null, 2)}\n`;
+}
+
+/** argv that installs production dependencies without running install scripts. */
+export function runtimeInstallCommand(): string[] {
+  return ['npm', 'install', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'];
+}
+
+/** Paths that must exist in the final image for the product to start and pass its probe. */
+export function imageRequiredPaths(kind: string): string[] {
+  const spec = imageSpec(kind);
+  if (kind === 'nestjs-service') {
+    return [`${spec.dest}/main.js`, ...SERVICE_RUNTIME_DEPENDENCIES.map((d) => `${spec.dest}/node_modules/${d}/package.json`)];
+  }
+  return [`${spec.dest}/index.html`];
+}
+
+/** Source of the page nginx serves at `/` for a remote, relative to the workspace root. */
+export function remoteIndexHtml(product: string): string {
+  if (!PRODUCT_PATTERN.test(product)) throw new Error(`invalid product name: ${product}`);
+  return `products/${product}/src/index.html`;
+}
+
 /** argv that builds one product with Nx. */
 export function productBuildCommand(product: string): string[] {
   if (!PRODUCT_PATTERN.test(product)) throw new Error(`invalid product name: ${product}`);
