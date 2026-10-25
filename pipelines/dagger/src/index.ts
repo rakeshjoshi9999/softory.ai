@@ -1,5 +1,5 @@
 import { dag, Container, Directory, File, Secret, func, object } from '@dagger.io/dagger';
-import { blockCommand, ciCommands, imageSpec, productBuildCommand, scanCommand, sbomCommand, signCommand, signImageCommand } from './plan.js';
+import { blockCommand, pnpmSetupCommands, ciCommands, imageSpec, productBuildCommand, scanCommand, sbomCommand, signCommand, signImageCommand } from './plan.js';
 
 const NODE_IMAGE = 'node:22-bookworm';
 const SYFT_IMAGE = 'anchore/syft:v1.18.1';
@@ -11,10 +11,8 @@ export class Factory {
   /** Node + pnpm container with the workspace mounted and dependencies installed. */
   @func()
   workspace(src: Directory): Container {
-    return dag
-      .container()
-      .from(NODE_IMAGE)
-      .withExec(['corepack', 'enable'])
+    const base = pnpmSetupCommands().reduce((c, argv) => c.withExec(argv), dag.container().from(NODE_IMAGE));
+    return base
       .withMountedCache('/root/.local/share/pnpm/store', dag.cacheVolume('pnpm-store'))
       .withDirectory('/work', src, { exclude: ['node_modules', '.nx', 'dist'] })
       .withWorkdir('/work')
