@@ -1,1 +1,1 @@
-{ "extends": "../../tsconfig.base.json", "compilerOptions": { "outDir": "../../dist/pipelines/dagger", "rootDir": "src" }, "include": ["src/plan.ts"] }
+{ "extends": "../../tsconfig.base.json", "compilerOptions": { "outDir": "../../dist/pipelines/dagger", "rootDir": "src", "experimentalDecorators": true }, "include": ["src/**/*.ts", "types/**/*.d.ts"] }
