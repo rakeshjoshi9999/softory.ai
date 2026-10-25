@@ -34,6 +34,15 @@ describe('local platform (kind + Argo CD + Kyverno)', () => {
     expect(v.attestors[0].entries[0].keys.publicKeys).toContain('@@COSIGN_PUBLIC_KEY@@');
   });
 
+  it('Kyverno policy exempts the platform namespaces', () => {
+    const rule = parse(read('deploy/platform/kyverno/require-signed-images.yaml')).spec.rules[0];
+    expect(rule.exclude.any[0].resources.namespaces).toEqual(expect.arrayContaining(['argocd', 'kyverno', 'kube-system']));
+  });
+
+  it('the platform test restarts Argo CD under the policy and waits for it', () => {
+    expect(read('scripts/platform-test.sh')).toMatch(/-n argocd rollout restart deploy[\s\S]*rollout status/);
+  });
+
   it('the rejection test deploys an unsigned image', () => {
     const [doc] = parseAllDocuments(read('deploy/platform/test/unsigned-pod.yaml'));
     expect(doc.toJS()).toMatchObject({ kind: 'Pod', spec: { containers: [{ image: expect.stringMatching(/^localhost:5001\/unsigned/) }] } });

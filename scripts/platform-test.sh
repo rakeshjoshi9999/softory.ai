@@ -3,6 +3,9 @@
 # Run after scripts/platform-up.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# The platform's own pods are exempt from the policy: restarting Argo CD must still come back Ready.
+kubectl -n argocd rollout restart deploy
+kubectl -n argocd rollout status deploy --timeout=300s
 kubectl create namespace policy-test --dry-run=client -o yaml | kubectl apply -f -
 # Kyverno can report the policy Ready a few seconds before its webhook enforces it, so an admitted
 # pod is retried for a bounded time; admission on every attempt is still a failure.

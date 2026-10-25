@@ -18,6 +18,10 @@ spec:
               namespaceSelector:
                 matchExpressions:
                   - { key: factory.dev/enforce-signatures, operator: NotIn, values: ["false"] }
+      exclude:
+        any:
+          - resources:
+              namespaces: [argocd, kyverno, kube-system]
       verifyImages:
         - imageReferences: ["*"]
           mutateDigest: true

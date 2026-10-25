@@ -17,6 +17,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
+- #107 P2-37 policy exempts platform namespaces: PR open, needs-review (Argo CD restart on kind not run)
 - #106 P2-36 platform-up cosign precheck: PR open, needs-review (kind run needed by a human for 3x back-to-back)
 - #91 P2-27 builder claims an issue before working on it: PR open, needs-human + needs-review
 - #98 P2-28 Dagger index.ts type-checked: PR #124 open, needs-review (affected lint/test/build green)
@@ -160,3 +161,4 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · #103 P2-33 · service image gets runtime node_modules (npm install in node:22-slim stage), remote image gets index.html; `runtimePackageJson`/`imageRequiredPaths`/`remoteIndexHtml` in plan.ts + 5 tests; no open PRs to sync, closed stale #102; `nx affected -t lint test build` green; engine not run (no Docker) · branch claude/103-image-contents
 - 2026-10-25 · #104 P2-34 · factory-lib sets numeric runAsUser/runAsGroup/fsGroup (101 static sites, 65532 services, values override), Dagger service image user `65532`, chart test + chart-check.sh numeric check; closed stale #103 (PR #134 merged); `nx affected -t lint test build` green; helm not run · branch claude/gifted-mendel-zwy7h1
 - 2026-10-25 · #106 P2-36 · platform-up.sh checks cosign up front when FACTORY_COSIGN_PUBLIC_KEY is unset (+ test running the script with fake tools; failed before); policy-Ready wait already on main (180s); `nx affected -t lint test build` green; kind 3x back-to-back not run (no cluster) · branch claude/106-platform-up-wait
+- 2026-10-25 · #107 P2-37 · Kyverno policy `exclude` for argocd/kyverno/kube-system, platform-test.sh restarts Argo CD and waits Ready, 2 new spec tests; `nx affected -t lint test build` green; kind restart not run (no cluster); closed stale #106 (PR #137 merged); PR #136 current with main · branch claude/107-policy-exclusions
