@@ -57,6 +57,7 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
+- #85 P2-21: criterion 3 (`platform-e2e` workflow run) is not done: no such workflow exists and `.github/workflows/` is off-limits. Please add one running `scripts/platform-up.sh && scripts/platform-test.sh`, trigger it and link the result. The `charts` CI job should call `scripts/chart-check.sh`.
 - #87 P2-23: `impact.yml` (Verdaccio service, base-branch release, `--seed-registry`) was never run in Actions or against Verdaccio here; a human copies it to `.github/workflows/impact.yml` and checks the first PR comment says "Dry-run assembly: run". It also folds in the safe `BASE_REF` env from #90.
 - #88 P2-24: shared test support is `products/orders-service/test-support/live-service.ts` (outside `src/`, so not built); it and the consumer specs load emitted material code by computed path because module boundaries forbid static imports. Tests use the generated client/Nest base from `materials/orders-api/generated`, not the registry-installed packages (CI has no registry).
 - #82 P2-18: root cause of the failing `dagger` job was unpinned corepack pnpm 12 (ERR_PNPM_IGNORED_BUILDS on install). Pinned pnpm 9.15.9 in the container; the CI `dagger` job on PR #112 then passed (lint/test/build in the engine). The `verify` job switch stays a needs-human workflow change.
@@ -78,6 +79,9 @@ Current phase: **Phase 1 — Foundations** (goal: Gate 1, one product rebuilt en
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-25 · #85 P2-21 · second platform-e2e run: policy apply refused by Kyverno's webhook (connection refused) right after the admission controller rolled out; platform-up now retries the apply up to 24×5 s before the Ready wait · needs another platform-e2e run · branch claude/85-product-charts
+- 2026-10-25 · #85 P2-21 · first platform-e2e run (human-triggered): platform up OK, unsigned image admitted 2 s after the policy was applied. platform-up now waits for `clusterpolicy/require-signed-images` Ready; platform-test retries an admitted pod up to 12×5 s before failing; spec test fails without it · needs another platform-e2e run · branch claude/85-product-charts
+- 2026-10-24 · #85 P2-21 · graph-service chart from recipe templates, chart-check.sh covers products/*/chart, test that every product has a chart (fails without), architecture doc names `products/*/chart`; kind e2e not run (needs human + workflow); `nx affected -t lint test build` green · branch claude/85-product-charts
 - 2026-10-24 · #86 P2-22 · `factory propagate <material>@<version> [--dry-run]` (assemble, test, one PR per consumer, patch-only `claude-approved`, idempotent), 8 tests; `nx affected -t lint test build` see PR · branch claude/86-propagate
 - 2026-10-24 · #88 P2-24 · live HTTP contract specs for orders-ui, orders-admin-ui, orders-report-worker against a real orders-service (generated Nest base) via emitted client; breaking fixture spec (getOrder removed) makes ui/admin fail; 6 new tests; lint/test/build green for the 4 products · branch claude/88-live-contract-tests
 - 2026-10-24 · builder · synced draft PR #112 (#82) with main (merge, PROGRESS/DECISIONS kept both sides, affected green); closed stale #83 (merged via #113), unblocks #84 P2-20 for the next run · branch claude/82-dagger-run

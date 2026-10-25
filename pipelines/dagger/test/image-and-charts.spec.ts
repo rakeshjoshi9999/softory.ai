@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -48,5 +48,20 @@ describe('Helm charts', () => {
     expect(chart.dependencies).toEqual([expect.objectContaining({ name: 'factory-lib', repository: 'file://../factory-lib' })]);
     expect(read(`deploy/charts/${kind}/templates/workload.yaml`)).toContain(tpl);
     expect(parse(read(`deploy/charts/${kind}/values.yaml`))).toHaveProperty('resources.limits');
+  });
+});
+
+describe('product charts', () => {
+  const products = readdirSync(join(root, 'products')).filter((d) => existsSync(join(root, 'products', d, 'product.yaml')));
+
+  it('finds the assembled products', () => {
+    expect(products).toEqual(expect.arrayContaining(['graph-service', 'orders-service', 'orders-ui']));
+  });
+
+  it.each(products)('%s has a recipe-generated chart that depends on factory-lib', (name) => {
+    const chart = parse(read(`products/${name}/chart/Chart.yaml`)) as { name: string; dependencies: { name: string; repository: string }[] };
+    expect(chart.name).toBe(name);
+    expect(chart.dependencies).toEqual([expect.objectContaining({ name: 'factory-lib', repository: 'file://../../../deploy/charts/factory-lib' })]);
+    expect(read(`products/${name}/chart/templates/workload.yaml`)).toContain('factory-lib.');
   });
 });
