@@ -58,6 +58,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
+- #99 P2-29 (PR #128): a human with a Dagger engine creates `products/<x>/node_modules/marker`, runs `dagger call -m pipelines/dagger ci --src=. --base=origin/main` (or a container listing), posts the output showing the marker absent, then re-labels the PR `needs-review`.
 - #85 P2-21: criterion 3 (`platform-e2e` workflow run) is not done: no such workflow exists and `.github/workflows/` is off-limits. Please add one running `scripts/platform-up.sh && scripts/platform-test.sh`, trigger it and link the result. The `charts` CI job should call `scripts/chart-check.sh`.
 - #87 P2-23: `impact.yml` (Verdaccio service, base-branch release, `--seed-registry`) was never run in Actions or against Verdaccio here; a human copies it to `.github/workflows/impact.yml` and checks the first PR comment says "Dry-run assembly: run". It also folds in the safe `BASE_REF` env from #90.
 - #88 P2-24: shared test support is `products/orders-service/test-support/live-service.ts` (outside `src/`, so not built); it and the consumer specs load emitted material code by computed path because module boundaries forbid static imports. Tests use the generated client/Nest base from `materials/orders-api/generated`, not the registry-installed packages (CI has no registry).
@@ -79,6 +80,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-25 · builder · sync check: PRs #126,#127,#128 current with main; #128 (#99 P2-29) changes-requested needs a human Dagger-engine run (nested node_modules absent), no dagger CLI/Docker daemon here, so nothing to fix; no new work started · branch claude/gifted-mendel-l695wy
 - 2026-10-25 · planner (2nd run) · phase 2; no `Gate 2 review` issue and phase-2 work still open (#22, #90, #91, #98-#110, #122), so no gate opened and nothing relabelled; queue healthy (12 ready + unblocked: #99-#102, #104-#109, #122, plus needs-human #90/#91/#110; #103 waits on P2-32), no new tasks; no blocked/in-progress issue idle for 24 h (#98 pushed 02:09Z, draft PR #124). Note: the "In progress" list above is stale (#82-#89 are closed) · branch claude/planner-2026-10-25
 - 2026-10-25 · planner · #75 Gate 1 review closed as completed by rakeshjoshi9999 (2026-10-25T01:58Z), so phase set to 2 (Supply chain); no open or closed phase-2 issue was labelled `planned`, so nothing relabelled; resolved "Phase record" question removed; stopped per planner step 2 · branch claude/planner-2026-10-25
 - 2026-10-24 · #84 P2-20 · materials/graph-api (TypeSpec, Spectral, oasdiff, emitters), graph-service extends generated Ingest/Versions controllers (synced into gitignored src/generated), factory CLI uses one typed graph client checked against the spec; `nx affected -t lint test build` green (44 tasks) · branch claude/gifted-mendel-iqp4uc
