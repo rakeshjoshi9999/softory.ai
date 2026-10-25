@@ -138,3 +138,4 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · builder · #98 (P2-28): criterion 1 done, criteria 2-3 blocked (no Dagger CLI in sandbox); draft PR; closed stale #89 (merged in #120) · branch claude/98-dagger-typecheck
 - 2026-10-25 · human (Codespace) · #98 (P2-28): `dagger call -m pipelines/dagger ci --src=. --base=origin/main` exit 0; with a deliberately failing test it exits 1 · branch claude/98-dagger-typecheck
 - 2026-10-25 · builder · #98 (P2-28): merged main into PR #124, `nx affected -t lint test build` green, marked ready + needs-review · branch claude/98-dagger-typecheck
+- 2026-10-25 · builder · sync check: PRs #126, #127, #128 current with main; #128 (P2-29) is changes-requested but its only blocking item needs a Dagger engine run (no dagger CLI/daemon here, install blocked), so left for a human; no resumable issue; no new work started · branch claude/gifted-mendel-iagb9o
