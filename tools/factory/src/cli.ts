@@ -24,7 +24,7 @@ if (command === 'graph' && path === 'sync') {
 
 if (command === 'impact' && path) {
   try {
-    const report = await impact(path.replace(/\/$/, ''));
+    const report = await impact(path.replace(/\/$/, ''), { seed: process.argv.includes('--seed-registry') });
     console.log(process.argv.includes('--json') ? JSON.stringify(report, null, 2) : renderMarkdown(report));
     process.exit(report.ok ? 0 : 1);
   } catch (e) {
@@ -126,7 +126,7 @@ if (command === 'assemble' && path) {
 }
 
 if (command !== 'validate' || !path) {
-  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml> | factory graph sync | factory recall <package>@<version> --reason <text> | factory impact <material-dir> [--json] | factory propagate <material>@<version> [--dry-run] | factory scan <package>@<version>|all [--report <trivy.json>|--sbom <file>] [--dry-run]');
+  console.error('usage: factory validate <path> | factory release <material> | factory verify <package>@<version> | factory provenance <package>@<version> | factory assemble <product.yaml> | factory graph sync | factory recall <package>@<version> --reason <text> | factory impact <material-dir> [--json] [--seed-registry] | factory propagate <material>@<version> [--dry-run] | factory scan <package>@<version>|all [--report <trivy.json>|--sbom <file>] [--dry-run]');
   process.exit(2);
 }
 

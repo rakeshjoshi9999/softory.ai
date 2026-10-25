@@ -26,6 +26,7 @@ beforeAll(() => {
 const deps = (breaking: unknown[], changelog: unknown[], graph: string[] | null = PRODUCTS): ImpactDeps => ({
   oasdiff: (args) => JSON.stringify(args[0] === 'breaking' ? breaking : changelog),
   graphConsumers: async () => graph,
+  registryReachable: async () => true,
   dryAssemble: async () => ({ ok: true, detail: 'would write 0 file(s)' }),
   runTests: () => ({ ok: true, detail: 'contract tests passed' }),
 });
@@ -58,6 +59,32 @@ describe('impact', () => {
   it('falls back to lockfiles when the graph is unreachable', async () => {
     const r = await impact('materials/orders-api', { root, deps: deps([], [], null) });
     expect(r.products.map((p) => [p.product, p.via])).toEqual(PRODUCTS.map((p) => [p, 'lockfile']));
+  });
+
+  it('runs the dry-run assembly when the registry answers', async () => {
+    const r = await impact('materials/orders-api', { root, deps: deps([], []) });
+    expect(r.dryRun).toBe('run');
+    expect(renderMarkdown(r)).toContain('Dry-run assembly: run against the registry.');
+  });
+
+  it('seeds the proposed version before the dry-run assembly, only with seed', async () => {
+    const calls: string[] = [];
+    const d: ImpactDeps = {
+      ...deps([], [{ level: 1, text: 'added field' }]),
+      seedRegistry: (m, v) => calls.push(`seed ${m}@${v}`),
+      dryAssemble: async () => (calls.push('assemble'), { ok: true, detail: 'ok' }),
+    };
+    await impact('materials/orders-api', { root, deps: d });
+    expect(calls).not.toContain('seed orders-api@1.1.0');
+    await impact('materials/orders-api', { root, deps: d, seed: true });
+    expect(calls.slice(-4)).toEqual(['seed orders-api@1.1.0', 'assemble', 'assemble', 'assemble']);
+  });
+
+  it('reports the dry-run as skipped when no registry answers', async () => {
+    const d = { ...deps([], []), registryReachable: async () => false, dryAssemble: async () => { throw new Error('must not run'); } };
+    const r = await impact('materials/orders-api', { root, deps: d });
+    expect(r).toMatchObject({ dryRun: 'skipped', ok: true });
+    expect(renderMarkdown(r)).toContain('skipped');
   });
 
   it('reports a failing consumer test', async () => {

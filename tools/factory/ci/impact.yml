@@ -12,6 +12,8 @@ permissions:
 jobs:
   impact:
     runs-on: ubuntu-latest
+    env:
+      FACTORY_REGISTRY: http://localhost:4873/
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,14 +29,40 @@ jobs:
         with:
           go-version: stable
       - run: pnpm install --frozen-lockfile
+      - name: Start Verdaccio with the repo config
+        run: |
+          docker run -d --name registry -p 4873:4873 \
+            -v "$PWD/tools/registry/config.yaml:/verdaccio/conf/config.yaml:ro" verdaccio/verdaccio:6
+          for i in $(seq 1 30); do curl -fsS http://localhost:4873/-/ping && exit 0; sleep 1; done
+          docker logs registry; exit 1
+      - name: Throwaway signing key
+        run: |
+          key="$(openssl ecparam -name prime256v1 -genkey -noout | openssl pkcs8 -topk8 -nocrypt)"
+          echo "FACTORY_SIGNING_KEY<<EOF" >> "$GITHUB_ENV"; echo "$key" >> "$GITHUB_ENV"; echo "EOF" >> "$GITHUB_ENV"
+      - name: Release the base branch's current versions into the registry
+        shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git worktree add ../base "origin/$BASE_REF"
+          (cd ../base && pnpm install --frozen-lockfile \
+            && pnpm nx run-many -t emit-openapi emit-nest-server emit-angular-client --output-style=static \
+            && for m in $(ls materials); do pnpm exec tsx tools/factory/src/cli.ts release "$m"; done) \
+            || { echo "base release failed" >&2; touch base-release-failed; }
       - name: Emit specs
-        run: pnpm nx run-many -t emit-openapi
+        run: pnpm nx run-many -t emit-openapi emit-nest-server emit-angular-client --output-style=static
       - name: Impact report
         shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           : > impact.md
-          for m in $(git diff --name-only origin/${{ github.base_ref }}...HEAD -- materials | cut -d/ -f2 | sort -u); do
-            pnpm exec tsx tools/factory/src/cli.ts impact "materials/$m" >> impact.md || true
+          if [ -f base-release-failed ]; then
+            echo "**Impact report incomplete:** releasing the base branch's versions into the registry failed, so the dry-run assembly could not run. See the job log." >> impact.md
+          fi
+          for m in $(git diff --name-only "origin/$BASE_REF"...HEAD -- materials | cut -d/ -f2 | sort -u); do
+            pnpm exec tsx tools/factory/src/cli.ts impact "materials/$m" --seed-registry >> impact.md \
+            || echo "**Impact report for \`$m\` failed.** See the job log." >> impact.md
           done
       - name: Post PR comment
         uses: actions/github-script@v7
