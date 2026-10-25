@@ -28,7 +28,7 @@ describe('image plan', () => {
   it('uses nginx-unprivileged for remotes and distroless Node for services, both non-root', () => {
     expect(imageSpec('angular-remote')).toMatchObject({ base: expect.stringContaining('nginx-unprivileged'), port: 8080 });
     expect(imageSpec('nestjs-service').base).toContain('distroless/nodejs');
-    expect(imageSpec('nestjs-service').user).toBe('nonroot');
+    expect(imageSpec('nestjs-service').user).toBe('65532');
     expect(() => imageSpec('php')).toThrow(/unknown product kind/);
   });
 
@@ -54,6 +54,16 @@ describe('Helm charts', () => {
     for (const needle of ['livenessProbe', 'readinessProbe', 'resources:', 'runAsNonRoot: true', 'readOnlyRootFilesystem: true', 'allowPrivilegeEscalation: false', 'drop: ["ALL"]']) {
       expect(lib).toContain(needle);
     }
+  });
+
+  it('sets a numeric runAsUser matching the image user, overridable by values', () => {
+    expect(lib).toMatch(/runAsUser: \{\{ default \.uid \.ctx\.Values\.runAsUser \}\}/);
+    expect(read('deploy/charts/factory-lib/templates/_service.tpl')).toContain('"uid" 65532');
+    expect(read('deploy/charts/factory-lib/templates/_static-site.tpl')).toContain('"uid" 101');
+    expect(imageSpec('nestjs-service').user).toMatch(/^\d+$/);
+    expect(imageSpec('angular-remote').user).toMatch(/^\d+$/);
+    expect(65532).toBe(Number(imageSpec('nestjs-service').user));
+    expect(101).toBe(Number(imageSpec('angular-remote').user));
   });
 
   it.each([

@@ -49,6 +49,8 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 
 - #90 P2-26 CI hardening: PR open, needs-human + needs-review (proposed `tools/factory/ci/ci.yml`)
 
+- #104 P2-34 numeric non-root uid: PR open, needs-review (helm not run, not installed)
+
 ## Next up
 - #76 P1-11: merged (PR #93); all phase-1 issues are closed.
 - #75 Gate 1 review: closed as completed by a human (2026-10-25); phase set to 2.
@@ -155,3 +157,4 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · #102 P2-32 · `imageOutDir()` = dist/products/<product>, used by Dagger `image()`; test checks it against committed products' and recipes' build outputs; `nx affected -t lint test build` green; engine not run (no Docker) · branch claude/102-dagger-image-outdir
 - 2026-10-25 · #110 P2-40 · impact.yml report step: failures (exit code + stderr) and unsupported names appear in impact.md; 2 tests run the step script (fail on old file); `nx affected -t lint test build` green; human must copy tools/factory/ci/impact.yml to .github/workflows/impact.yml (strip header comment) · branch claude/110-impact-yml-failures
 - 2026-10-25 · #103 P2-33 · service image gets runtime node_modules (npm install in node:22-slim stage), remote image gets index.html; `runtimePackageJson`/`imageRequiredPaths`/`remoteIndexHtml` in plan.ts + 5 tests; no open PRs to sync, closed stale #102; `nx affected -t lint test build` green; engine not run (no Docker) · branch claude/103-image-contents
+- 2026-10-25 · #104 P2-34 · factory-lib sets numeric runAsUser/runAsGroup/fsGroup (101 static sites, 65532 services, values override), Dagger service image user `65532`, chart test + chart-check.sh numeric check; closed stale #103 (PR #134 merged); `nx affected -t lint test build` green; helm not run · branch claude/gifted-mendel-zwy7h1
