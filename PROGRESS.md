@@ -62,6 +62,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
+- #99 / PR #128: needs a human with a Dagger engine to run the nested `node_modules` check (criterion 3) and post output on the PR, then re-label `needs-review`. Builder cannot (no Docker).
 - #85 P2-21: criterion 3 (`platform-e2e` workflow run) is not done: no such workflow exists and `.github/workflows/` is off-limits. Please add one running `scripts/platform-up.sh && scripts/platform-test.sh`, trigger it and link the result. The `charts` CI job should call `scripts/chart-check.sh`.
 - #87 P2-23: `impact.yml` (Verdaccio service, base-branch release, `--seed-registry`) was never run in Actions or against Verdaccio here; a human copies it to `.github/workflows/impact.yml` and checks the first PR comment says "Dry-run assembly: run". It also folds in the safe `BASE_REF` env from #90.
 - #88 P2-24: shared test support is `products/orders-service/test-support/live-service.ts` (outside `src/`, so not built); it and the consumer specs load emitted material code by computed path because module boundaries forbid static imports. Tests use the generated client/Nest base from `materials/orders-api/generated`, not the registry-installed packages (CI has no registry).
@@ -147,3 +148,4 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · #91 P2-27 · prompts/builder.md step 5: claim comment + back-off + 3 h stale takeover; docs only; `nx affected` run below · branch claude/91-builder-claim
 - 2026-10-25 · #90 P2-26 · proposed ci.yml at tools/factory/ci/ci.yml (kubeconform + Dagger from pinned release archives, SHA-256 verified; checksums confirmed against upstream files); impact.yml already used `env: BASE_REF` (criterion 2 met on main); 3 new tests (fail without file); `nx affected -t lint test build` green · branch claude/90-ci-hardening
 - 2026-10-25 · builder · synced PR #128 (#99) with main (merge, PROGRESS/DECISIONS kept both sides, affected green); #127 current; #128 changes-requested needs Dagger-engine evidence from a human, so no code fix possible · branch claude/99-dagger-excludes
+- 2026-10-25 · builder · PR #128 (#99): re-synced with main (conflicts in PROGRESS/DECISIONS, kept both), affected green; blocking review item needs human Dagger run
