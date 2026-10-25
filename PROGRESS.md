@@ -17,6 +17,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
+- #91 P2-27 builder claims an issue before working on it: PR open, needs-human + needs-review
 - #98 P2-28 Dagger index.ts type-checked: PR #124 open, needs-review (affected lint/test/build green)
 - #84 P2-20 graph-service API as a TypeSpec material: PR #114 open, needs-review
 - #86 P2-22 `factory propagate`: PR #116 open, needs-review
@@ -143,5 +144,6 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · human (Codespace) · #98 (P2-28): `dagger call -m pipelines/dagger ci --src=. --base=origin/main` exit 0; with a deliberately failing test it exits 1 · branch claude/98-dagger-typecheck
 - 2026-10-25 · builder · #98 (P2-28): merged main into PR #124, `nx affected -t lint test build` green, marked ready + needs-review · branch claude/98-dagger-typecheck
 - 2026-10-25 · #99 P2-29 · `SOURCE_EXCLUDES` (`**/node_modules`, `**/.nx`, `**/dist`) in plan.ts used by workspace(), 2 tests; criterion 3 (Dagger run with nested node_modules) not run, no Dagger/Docker here; `nx affected -t lint test build` green · branch claude/99-dagger-excludes
+- 2026-10-25 · #91 P2-27 · prompts/builder.md step 5: claim comment + back-off + 3 h stale takeover; docs only; `nx affected` run below · branch claude/91-builder-claim
 - 2026-10-25 · #90 P2-26 · proposed ci.yml at tools/factory/ci/ci.yml (kubeconform + Dagger from pinned release archives, SHA-256 verified; checksums confirmed against upstream files); impact.yml already used `env: BASE_REF` (criterion 2 met on main); 3 new tests (fail without file); `nx affected -t lint test build` green · branch claude/90-ci-hardening
 - 2026-10-25 · builder · synced PR #128 (#99) with main (merge, PROGRESS/DECISIONS kept both sides, affected green); #127 current; #128 changes-requested needs Dagger-engine evidence from a human, so no code fix possible · branch claude/99-dagger-excludes

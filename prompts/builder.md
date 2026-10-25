@@ -42,7 +42,19 @@ If the sync took the whole run, stop there and log it in PROGRESS.md.
    Pick the lowest task ID. If none, append "no ready issues" to the run log in PROGRESS.md
    and stop.
 
-5. Add the `in-progress` label to the issue. Create branch `claude/<number>-<slug>` from `main`.
+5. **Claim the issue, then branch.** Two runs once built the same issue (PRs #50 and #51), so the
+   claim must be visible and checked before any work:
+   - add the `in-progress` label and post the comment `claimed by run <UTC timestamp>` (ISO 8601,
+     e.g. `claimed by run 2026-10-25T04:30:12Z`),
+   - re-read the issue's comments. If another `claimed by run` comment is older than yours (and
+     not stale, see below), back off: remove nothing, post nothing more, pick the next issue in
+     step 4 (or stop if none). Ties on the timestamp go to the lower comment id,
+   - a claim is **stale** when the issue has no commit on its `claude/<number>-*` branch (or no
+     comment) newer than 3 hours since the claim. A stale claim is ignored for the back-off check
+     and may be taken over: post your own claim comment saying `taking over stale claim <timestamp>`
+     and continue from any WIP commits on the existing branch,
+   - only then create branch `claude/<number>-<slug>` from `main` (or reuse the existing one when
+     taking over).
 
 6. Set a goal and work until it is met:
    /goal Every acceptance criterion in issue #<number> is demonstrated with command output,
