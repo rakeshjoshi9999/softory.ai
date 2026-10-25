@@ -6,6 +6,14 @@ export type Block = 'lint' | 'test' | 'build';
 /** Order matters: `ci` stops at the first failing block. */
 export const BLOCKS: readonly Block[] = ['lint', 'test', 'build'];
 
+/** pnpm major the lockfile (v9) and the verify job use; corepack's default is newer and refuses unapproved build scripts. */
+export const PNPM_VERSION = '9.15.9';
+
+/** argv that activates the pinned pnpm through corepack. */
+export function pnpmSetupCommands(): string[][] {
+  return [['corepack', 'enable'], ['corepack', 'prepare', `pnpm@${PNPM_VERSION}`, '--activate']];
+}
+
 const BASE_PATTERN = /^[A-Za-z0-9._\/-]+$/;
 
 /** Throws unless `dir` looks like a factory workspace (pnpm + Nx). */
