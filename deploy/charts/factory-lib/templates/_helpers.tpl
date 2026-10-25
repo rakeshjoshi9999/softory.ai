@@ -22,7 +22,7 @@ app.kubernetes.io/name: {{ include "factory-lib.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
-{{/* Shared pod spec body. Expects a dict: ctx (root context), port, healthPath. */}}
+{{/* Shared pod spec body. Expects a dict: ctx (root context), port, healthPath, uid (numeric default user; values runAsUser/runAsGroup/fsGroup override). */}}
 {{- define "factory-lib.container" -}}
 - name: {{ include "factory-lib.name" .ctx }}
   image: "{{ .ctx.Values.image.repository }}:{{ .ctx.Values.image.tag }}"
@@ -47,6 +47,8 @@ app.kubernetes.io/instance: {{ .Release.Name }}
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    runAsUser: {{ default .uid .ctx.Values.runAsUser }}
+    runAsGroup: {{ default .uid .ctx.Values.runAsGroup }}
     capabilities:
       drop: ["ALL"]
   volumeMounts:
@@ -73,6 +75,9 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: {{ default .uid .ctx.Values.runAsUser }}
+        runAsGroup: {{ default .uid .ctx.Values.runAsGroup }}
+        fsGroup: {{ default .uid .ctx.Values.fsGroup }}
         seccompProfile:
           type: RuntimeDefault
       containers:

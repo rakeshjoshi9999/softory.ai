@@ -89,7 +89,7 @@ export function imageSpec(kind: string): ImageSpec {
     return { base: 'nginxinc/nginx-unprivileged:1.27-alpine', dest: '/usr/share/nginx/html', port: 8080, user: '101', entrypoint: [] };
   }
   if (kind === 'nestjs-service') {
-    return { base: 'gcr.io/distroless/nodejs22-debian12:nonroot', dest: '/app', port: 3000, user: 'nonroot', entrypoint: ['/nodejs/bin/node', '/app/main.js'] };
+    return { base: 'gcr.io/distroless/nodejs22-debian12:nonroot', dest: '/app', port: 3000, user: '65532', entrypoint: ['/nodejs/bin/node', '/app/main.js'] };
   }
   throw new Error(`unknown product kind: ${kind}`);
 }

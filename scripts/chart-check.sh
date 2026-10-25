@@ -5,5 +5,8 @@ cd "$(dirname "$0")/.."
 for chart in deploy/charts/nestjs-service deploy/charts/angular-remote products/*/chart; do
   helm dependency build "$chart" >/dev/null
   helm lint "$chart"
-  helm template check "$chart" | kubeconform -strict -summary
+  rendered=$(helm template check "$chart")
+  echo "$rendered" | kubeconform -strict -summary
+  # kubelet rejects runAsNonRoot without a numeric uid
+  echo "$rendered" | grep -Eq 'runAsUser: [0-9]+' || { echo "$chart: no numeric runAsUser" >&2; exit 1; }
 done
