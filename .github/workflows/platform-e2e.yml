@@ -16,9 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: helm/kind-action@v1
-      - uses: sigstore/cosign-installer@v3
         with:
           install_only: true
+      - uses: sigstore/cosign-installer@v3
       - name: Bring up the platform
         run: bash scripts/platform-up.sh
       - name: Unsigned image is rejected
