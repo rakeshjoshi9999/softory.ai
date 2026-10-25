@@ -53,6 +53,8 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 
 - #104 P2-34 numeric non-root uid: PR open, needs-review (helm not run, not installed)
 
+- #108 P2-38 impact falls back to / unions lockfile consumers: PR open, needs-review
+
 ## Next up
 - #76 P1-11: merged (PR #93); all phase-1 issues are closed.
 - #75 Gate 1 review: closed as completed by a human (2026-10-25); phase set to 2.
@@ -162,3 +164,4 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · #104 P2-34 · factory-lib sets numeric runAsUser/runAsGroup/fsGroup (101 static sites, 65532 services, values override), Dagger service image user `65532`, chart test + chart-check.sh numeric check; closed stale #103 (PR #134 merged); `nx affected -t lint test build` green; helm not run · branch claude/gifted-mendel-zwy7h1
 - 2026-10-25 · #106 P2-36 · platform-up.sh checks cosign up front when FACTORY_COSIGN_PUBLIC_KEY is unset (+ test running the script with fake tools; failed before); policy-Ready wait already on main (180s); `nx affected -t lint test build` green; kind 3x back-to-back not run (no cluster) · branch claude/106-platform-up-wait
 - 2026-10-25 · #107 P2-37 · Kyverno policy `exclude` for argocd/kyverno/kube-system, platform-test.sh restarts Argo CD and waits Ready, 2 new spec tests; `nx affected -t lint test build` green; kind restart not run (no cluster); closed stale #106 (PR #137 merged); PR #136 current with main · branch claude/107-policy-exclusions
+- 2026-10-25 · #108 P2-38 · impact unions graph and lockfile consumers, graph queried per pinned version, 4 new tests (3 fail on old code); `nx affected -t lint test build` green · branch claude/108-impact-lockfile-fallback
