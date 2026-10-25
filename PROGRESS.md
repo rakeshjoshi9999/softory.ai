@@ -51,6 +51,8 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 
 - #104 P2-34 numeric non-root uid: PR open, needs-review (helm not run, not installed)
 
+- #105 P2-35 policy rejection test with positive control: PR open, needs-review (kind run not possible here)
+
 ## Next up
 - #76 P1-11: merged (PR #93); all phase-1 issues are closed.
 - #75 Gate 1 review: closed as completed by a human (2026-10-25); phase set to 2.
@@ -89,6 +91,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 
 ## Run log
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-25 · #105 P2-35 · platform-test.sh pushes unsigned+signed images at factory-registry:5000, asserts Kyverno `no signatures found` denial (extracted `classifyDenial`, tested), signed positive control, fake-tool tests incl. policy-removed fails; kind run not done (no cluster) · closed stale #104 (PR #135 merged) · branch claude/105-policy-proof
 - 2026-10-25 · planner (2nd run) · phase 2; no `Gate 2 review` issue and phase-2 work still open (#22, #90, #91, #98-#110, #122), so no gate opened and nothing relabelled; queue healthy (12 ready + unblocked: #99-#102, #104-#109, #122, plus needs-human #90/#91/#110; #103 waits on P2-32), no new tasks; no blocked/in-progress issue idle for 24 h (#98 pushed 02:09Z, draft PR #124). Note: the "In progress" list above is stale (#82-#89 are closed) · branch claude/planner-2026-10-25
 - 2026-10-25 · planner · #75 Gate 1 review closed as completed by rakeshjoshi9999 (2026-10-25T01:58Z), so phase set to 2 (Supply chain); no open or closed phase-2 issue was labelled `planned`, so nothing relabelled; resolved "Phase record" question removed; stopped per planner step 2 · branch claude/planner-2026-10-25
 - 2026-10-24 · #84 P2-20 · materials/graph-api (TypeSpec, Spectral, oasdiff, emitters), graph-service extends generated Ingest/Versions controllers (synced into gitignored src/generated), factory CLI uses one typed graph client checked against the spec; `nx affected -t lint test build` green (44 tasks) · branch claude/gifted-mendel-iqp4uc
