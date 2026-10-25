@@ -1,0 +1,89 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      FIXER_URL: ${{ secrets.FIXER_URL }}
+      FIXER_TOKEN: ${{ secrets.FIXER_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        if: hashFiles('package.json') != ''
+        run: pnpm install --frozen-lockfile
+      - name: Lint, test, build (affected)
+        if: hashFiles('nx.json') != ''
+        run: pnpm nx affected -t lint test build --base=origin/main --parallel=3 2>&1 | tee ci.log
+        shell: bash
+
+      # Incident response: hand the failure to the Claude fixer scheduled task.
+      - name: Notify fixer
+        if: failure() && env.FIXER_URL != ''
+        shell: bash
+        run: |
+          TAIL=$(tail -n 80 ci.log 2>/dev/null || echo "no log captured")
+          TEXT=$(printf 'CI failed.\nRepo: %s\nBranch: %s\nCommit: %s\nRun: %s/%s/actions/runs/%s\n\nLog tail:\n%s' \
+            "$GITHUB_REPOSITORY" "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" "$GITHUB_SHA" \
+            "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$TAIL")
+          jq -n --arg text "$TEXT" '{text: $text}' > payload.json
+          curl -sS -X POST "$FIXER_URL" \
+            -H "Authorization: Bearer $FIXER_TOKEN" \
+            -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "Content-Type: application/json" \
+            --data @payload.json
+
+  # helm lint + kubeconform for the thin charts (P2-09). Not a required check yet.
+  charts:
+    runs-on: ubuntu-latest
+    continue-on-error: true   # first real helm run; make it blocking once green
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+      - name: Install kubeconform
+        run: |
+          set -euo pipefail
+          # SHA-256 from the upstream v0.6.7 CHECKSUMS file
+          KUBECONFORM_SHA256=95f14e87aa28c09d5941f11bd024c1d02fdc0303ccaa23f61cef67bc92619d73
+          curl -fsSL -o kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          echo "$KUBECONFORM_SHA256  kubeconform.tar.gz" | sha256sum -c -
+          sudo tar xzf kubeconform.tar.gz -C /usr/local/bin kubeconform
+      - run: bash scripts/chart-check.sh
+
+  # First real run of the Dagger pipeline module (P2-01). Informational until it is green;
+  # then switch the verify job to `dagger call ci` and drop this job.
+  dagger:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Dagger v0.21.11
+        run: |
+          set -euo pipefail
+          # SHA-256 from the upstream v0.21.11 checksums.txt
+          DAGGER_SHA256=a2d3ef96e7305abc18663a3606d9c1c592278ba3c8f48e01d6be14eef72276ef
+          curl -fsSL -o dagger.tar.gz https://github.com/dagger/dagger/releases/download/v0.21.11/dagger_v0.21.11_linux_amd64.tar.gz
+          echo "$DAGGER_SHA256  dagger.tar.gz" | sha256sum -c -
+          sudo tar xzf dagger.tar.gz -C /usr/local/bin dagger
+      - run: dagger call -m pipelines/dagger ci --src=. --base=origin/main
