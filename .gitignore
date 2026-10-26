@@ -15,3 +15,4 @@ deploy/charts/*/Chart.lock
 # emitter output copied into products by their sync-generated target
 products/*/src/generated
 .platform
+.loop/

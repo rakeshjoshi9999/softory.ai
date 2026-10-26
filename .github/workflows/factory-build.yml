@@ -1,0 +1,133 @@
+name: factory-build
+
+# The factory loop. Deterministic code (tools/loop) decides what to do; Claude is called only
+# when there is a task to build, an interrupted task to resume, or a PR to fix.
+# Turn it on with the repository variable FACTORY_LOOP_ENABLED=true.
+
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+  pull_request:
+    types: [labeled]
+
+concurrency:
+  group: factory-build
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GH_TOKEN: ${{ secrets.FACTORY_GH_TOKEN }}
+  FACTORY_BUILD_MODEL: ${{ vars.FACTORY_BUILD_MODEL }}
+  FACTORY_FIX_MODEL: ${{ vars.FACTORY_FIX_MODEL }}
+  LOOP: npx --yes tsx@4.23.15 tools/loop/src/cli.ts
+
+jobs:
+  build:
+    if: >-
+      vars.FACTORY_LOOP_ENABLED == 'true' &&
+      (github.event_name != 'pull_request' ||
+       github.event.label.name == 'changes-requested' ||
+       github.event.label.name == 'merge-conflict')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          # A personal token, so pushes and PRs from this job start CI and the reviewer.
+          token: ${{ secrets.FACTORY_GH_TOKEN }}
+
+      - name: Plan, mark conflicts, decide (no model call)
+        id: decide
+        run: |
+          $LOOP plan
+          $LOOP mark-conflicts
+          $LOOP decide
+
+      - name: Nothing to do
+        if: steps.decide.outputs.kind == 'none'
+        run: echo "No work. Claude was not started."
+
+      - name: Check out the work branch
+        if: steps.decide.outputs.kind != 'none'
+        id: branch
+        env:
+          BRANCH: ${{ steps.decide.outputs.branch }}
+          KIND: ${{ steps.decide.outputs.kind }}
+        run: |
+          git config user.name "factory-loop"
+          git config user.email "factory-loop@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; then
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH" origin/main
+          fi
+          conflict=0
+          if [ "$KIND" = fix ] && ! git merge --no-edit origin/main; then conflict=1; fi
+          echo "conflict=$conflict" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v4
+        if: steps.decide.outputs.kind != 'none'
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        if: steps.decide.outputs.kind != 'none'
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        if: steps.decide.outputs.kind != 'none'
+        # May fail while a merge conflict is unresolved; Claude reinstalls after resolving it.
+        continue-on-error: true
+        run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+
+      - name: Prepare the prompt
+        if: steps.decide.outputs.kind != 'none'
+        id: prepare
+        env:
+          JOB: ${{ steps.decide.outputs.job }}
+          CONFLICT: ${{ steps.branch.outputs.conflict }}
+        run: $LOOP prepare
+
+      - name: Claude does the work
+        if: steps.decide.outputs.kind != 'none'
+        id: claude
+        continue-on-error: true
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: ${{ steps.prepare.outputs.prompt }}
+          claude_args: >-
+            --model ${{ steps.decide.outputs.model }}
+            --max-turns ${{ vars.FACTORY_MAX_TURNS || '80' }}
+            --allowedTools "Bash,Read,Edit,MultiEdit,Write,Glob,Grep,TodoWrite"
+
+      - name: Verify (no model call)
+        if: steps.decide.outputs.kind != 'none'
+        id: verify
+        continue-on-error: true
+        run: |
+          mkdir -p .loop
+          git add -A -- . ':!.loop' && git diff --cached --quiet || git commit -q -m "wip: uncommitted changes from the factory loop run"
+          pnpm nx affected -t lint test build --base=origin/main --parallel=3 > .loop/verify.log 2>&1 || { tail -40 .loop/verify.log; exit 1; }
+
+      - name: Push and report (no model call)
+        if: always() && steps.decide.outputs.kind != 'none'
+        env:
+          JOB: ${{ steps.decide.outputs.job }}
+          BRANCH: ${{ steps.decide.outputs.branch }}
+          VERIFY: ${{ steps.verify.outcome }}
+          EXEC_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          git add -A -- . ':!.loop' && git diff --cached --quiet || git commit -q -m "wip: uncommitted changes from the factory loop run"
+          export AHEAD=$(git rev-list --count origin/main..HEAD)
+          if [ "$AHEAD" -gt 0 ]; then git push origin "HEAD:refs/heads/$BRANCH"; fi
+          $LOOP finish

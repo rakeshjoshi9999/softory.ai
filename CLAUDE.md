@@ -2,23 +2,20 @@
 
 You are building the Software Factory: an open-source platform that turns specs (materials) into
 signed packages, assembles products from a `product.yaml` + recipe, and ships them through gated
-pipelines. Read `docs/architecture.md` for the full design and `PROGRESS.md` for where we are.
+pipelines. The full design is in `docs/architecture.md`; progress is tracked in GitHub issues and PRs.
 
-## Every run starts and ends the same way
-1. Read `PROGRESS.md`, `docs/DECISIONS.md` and the issue you are working on.
-2. Work on exactly ONE issue per run, on a branch named `claude/<issue-number>-<slug>`.
-3. Before finishing, update `PROGRESS.md` (what changed, what is next, open questions)
-   and add a line to `docs/DECISIONS.md` for any design decision you made.
-
-## Usage limits and interrupted runs
-- A run can be cut off at any moment when the Claude usage limit is reached. Work so that
-  stopping is always safe: commit and push `wip(#n):` checkpoints after each completed
-  acceptance criterion, and keep "Resume notes" in PROGRESS.md current.
-- Never start a second issue while one is `in-progress` with an unfinished branch: resume it.
-- Never rely on anything that only exists in the session (scratch files, local state);
-  if it matters for the next run, it goes in the branch or PROGRESS.md.
-- Prefer small steps: one run should not need more than one acceptance criterion's worth of
-  work between pushes.
+## How runs work (factory loop)
+The factory loop (`.github/workflows/factory-*.yml`, code in `tools/loop`) picks the task, checks
+out the branch, pushes, opens the PR, sets labels and records progress on GitHub. In a loop run:
+1. Do only the task in your prompt, on the branch already checked out. Do not push, open or edit
+   PRs, change labels or issues, or edit `PROGRESS.md`.
+2. Commit as you go: `feat(#n): ...`, `wip(#n): ...` checkpoints after each acceptance criterion,
+   `chore(generate): ...` for emitter output. The workflow pushes your commits even if the run is
+   cut off, and the next run resumes from them.
+3. Read other docs only when the task needs them. Search `docs/DECISIONS.md` and
+   `docs/architecture.md` with Grep instead of reading them whole. Add one line to
+   `docs/DECISIONS.md` for each design decision you make.
+4. Before stopping, write `.loop/result.md` as the prompt describes.
 
 ## Stack (open source only)
 - Monorepo: Nx + pnpm, TypeScript strict everywhere.
@@ -47,10 +44,10 @@ pipelines. Read `docs/architecture.md` for the full design and `PROGRESS.md` for
 - `pnpm nx affected -t lint test build --base=origin/main` exits 0.
 - New behaviour has tests; tests fail without the change and pass with it.
 - No edits to `generated/` folders; no skipped or deleted tests.
-- PR description: summary, how it was verified, follow-up issues created.
+- `.loop/result.md`: summary, how each criterion was verified, follow-ups.
 
 ## Never
 - Push to `main`, force-push, or merge your own PR.
 - Touch `.github/workflows/`, `.claude/`, `CODEOWNERS`, secrets or auth code unless the issue
   explicitly says so (these need human review).
-- Start work outside the issue's scope. Create a new issue for anything else you find.
+- Start work outside the task's scope. List anything else you find under follow-ups in `.loop/result.md`.

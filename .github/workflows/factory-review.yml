@@ -1,0 +1,66 @@
+name: factory-review
+
+# Reviews a PR when it gets the `needs-review` label. Claude reads only the issue, the diff and
+# earlier reviews, writes .loop/review.json, and the script posts it and sets labels.
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number to review
+        required: true
+
+concurrency:
+  group: factory-review-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GH_TOKEN: ${{ secrets.FACTORY_GH_TOKEN }}
+  FACTORY_REVIEW_MODEL: ${{ vars.FACTORY_REVIEW_MODEL }}
+  LOOP: npx --yes tsx@4.23.15 tools/loop/src/cli.ts
+  PR: ${{ github.event.pull_request.number || inputs.pr }}
+
+jobs:
+  review:
+    if: >-
+      vars.FACTORY_LOOP_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' || github.event.label.name == 'needs-review')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ env.PR }}/head
+          fetch-depth: 0
+
+      - name: Prepare the review (no model call)
+        id: prepare
+        run: |
+          git fetch -q origin main
+          mkdir -p .loop
+          git diff origin/main...HEAD -- . ':!pnpm-lock.yaml' ':!**/generated/**' > .loop/pr.diff
+          echo "diff: $(wc -c < .loop/pr.diff) bytes"
+          $LOOP review-prepare "$PR"
+
+      - name: Claude reviews
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: ${{ steps.prepare.outputs.prompt }}
+          claude_args: >-
+            --model ${{ vars.FACTORY_REVIEW_MODEL || 'claude-sonnet-5-5' }}
+            --max-turns 30
+            --allowedTools "Read,Glob,Grep,Write"
+
+      - name: Post the review (no model call)
+        if: always() && steps.prepare.outcome == 'success'
+        env:
+          EXEC_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: $LOOP review-finish "$PR"
