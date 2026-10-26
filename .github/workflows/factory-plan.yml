@@ -1,0 +1,33 @@
+name: factory-plan
+
+# Phase gates without a model: closes issues whose PR merged, opens `Gate n review` when a
+# phase is done, and promotes the next phase when a human closes the gate as completed.
+
+on:
+  schedule:
+    - cron: '47 */6 * * *'
+  issues:
+    types: [closed]
+  workflow_dispatch: {}
+
+concurrency:
+  group: factory-plan
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    if: vars.FACTORY_LOOP_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tools/loop
+            docs/architecture.md
+      - run: npx --yes tsx@4.23.15 tools/loop/src/cli.ts plan
+        env:
+          GH_TOKEN: ${{ secrets.FACTORY_GH_TOKEN }}

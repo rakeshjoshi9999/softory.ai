@@ -9,7 +9,8 @@
   "scripts": {
     "nx": "nx",
     "factory": "tsx tools/factory/src/cli.ts",
-    "changeset": "changeset"
+    "changeset": "changeset",
+    "loop": "tsx tools/loop/src/cli.ts"
   },
   "devDependencies": {
     "@angular-architects/native-federation": "^21.2.6",
