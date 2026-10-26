@@ -24,7 +24,9 @@
       "Tests pin scores for three fixture repos"
     ],
     "scope": "tools/, control-plane-api, products/readiness-remote.",
-    "blockedBy": ["P4-01"],
+    "blockedBy": [
+      "P4-01"
+    ],
     "labels": []
   },
   {
@@ -37,7 +39,9 @@
       "A contract test generated from the draft passes against the running fixture service"
     ],
     "scope": "tools/extract.",
-    "blockedBy": ["P4-01"],
+    "blockedBy": [
+      "P4-01"
+    ],
     "labels": []
   },
   {
@@ -50,7 +54,9 @@
       "Style Dictionary builds CSS variables from the draft; a fixture app renders the same before and after (visual test)"
     ],
     "scope": "tools/extract.",
-    "blockedBy": ["P4-01"],
+    "blockedBy": [
+      "P4-01"
+    ],
     "labels": []
   },
   {
@@ -64,7 +70,9 @@
       "Fixture legacy app goes from unregistered to signed image in one run"
     ],
     "scope": "recipes/legacy, pipelines/dagger.",
-    "blockedBy": ["P4-01"],
+    "blockedBy": [
+      "P4-01"
+    ],
     "labels": []
   },
   {
@@ -77,7 +85,10 @@
       "The readiness score's contract-test rule picks the tests up"
     ],
     "scope": "tools/, recipes/legacy.",
-    "blockedBy": ["P4-03", "P4-05"],
+    "blockedBy": [
+      "P4-03",
+      "P4-05"
+    ],
     "labels": []
   },
   {
@@ -118,8 +129,12 @@
       "`pnpm factory lineage --input context-pack@1.2.0` lists every file and product derived from that input"
     ],
     "scope": "tools/, emitters/, products/graph-service, .claude hooks (needs-human).",
-    "blockedBy": ["P4-07"],
-    "labels": ["needs-human"]
+    "blockedBy": [
+      "P4-07"
+    ],
+    "labels": [
+      "needs-human"
+    ]
   },
   {
     "id": "P4-10",
@@ -132,7 +147,9 @@
       "End-to-end test: recall a fixture emitter version and watch exposure reach zero"
     ],
     "scope": "products/run-orchestrator, products/recalls-remote, deploy policies.",
-    "blockedBy": ["P4-09"],
+    "blockedBy": [
+      "P4-09"
+    ],
     "labels": []
   },
   {
@@ -145,8 +162,12 @@
       "Per-team token cost is reported to the control plane insights"
     ],
     "scope": "AI workforce config, control-plane-api insights.",
-    "blockedBy": ["P4-07"],
-    "labels": ["needs-human"]
+    "blockedBy": [
+      "P4-07"
+    ],
+    "labels": [
+      "needs-human"
+    ]
   },
   {
     "id": "P4-12",
@@ -158,7 +179,11 @@
       "Snapshot test of the report structure"
     ],
     "scope": "tools/report.",
-    "blockedBy": ["P4-02", "P4-03", "P4-04"],
+    "blockedBy": [
+      "P4-02",
+      "P4-03",
+      "P4-04"
+    ],
     "labels": []
   },
   {
@@ -171,7 +196,46 @@
       "PROGRESS.md records the evidence and the planner opens `Gate 4 review` for a human"
     ],
     "scope": "docs/, scripts/.",
-    "blockedBy": ["P4-06", "P4-10", "P4-12"],
+    "blockedBy": [
+      "P4-06",
+      "P4-10",
+      "P4-12",
+      "P4-14",
+      "P4-15"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P4-14",
+    "title": "Living docs generated from specs and the material graph",
+    "goal": "Our answer to Factory AutoWiki: documentation that is rebuilt on every merge from specs, recipes and the graph, so it describes intent and dependencies, not just code.",
+    "acceptance": [
+      "`factory docs build` generates a static site: one page per material (spec reference, versions, consumers, emitters), per product (recipe, materials consumed, deploy and SLOs, owners) and per recipe, plus an architecture diagram of products and materials from the graph",
+      "API reference pages render from the OpenAPI and AsyncAPI specs; diagrams are generated (Mermaid), not hand-drawn",
+      "The docs rebuild on merge to main (workflow provided in tools/factory/ci/ for a human to copy) and link from the catalog",
+      "A test asserts every material and product in the repo has a page and no page links to a missing one",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "tools/factory docs command, docs site template, tools/factory/ci/.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P4-15",
+    "title": "AI review gate in the gate center",
+    "goal": "Code review as a governed gate: an AI reviewer that uses the customer's own context packs, reports only blocking problems with evidence, and is measured like any other gate.",
+    "acceptance": [
+      "A gate plugin `ai-review` implements the Gate contract: input is the PR diff, linked issue and the product's context pack; output is pass, warn or fail with per-finding file, line, problem and fix",
+      "Model calls go through the model gateway (P4-11); the model and context-pack versions are recorded in the gate result for lineage",
+      "Findings post as PR comments and appear in the gate center; a waiver works like any other gate",
+      "An eval set of at least 20 fixture PRs (known-good and known-bad) measures precision and recall; the gate only fails PRs when precision on the eval set is at least 80%, otherwise it warns",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "gates plugin package, control-plane-api gate ingestion, evals/.",
+    "blockedBy": [
+      "P4-07",
+      "P4-11"
+    ],
     "labels": []
   }
 ]

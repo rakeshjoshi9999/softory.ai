@@ -22,7 +22,9 @@
       "Pagination and filtering are covered by tests; contract tests pass against the generated client"
     ],
     "scope": "products/control-plane-api.",
-    "blockedBy": ["P3-01"],
+    "blockedBy": [
+      "P3-01"
+    ],
     "labels": []
   },
   {
@@ -49,8 +51,13 @@
       "Playwright test signs in with a test user and reaches the home page"
     ],
     "scope": "products/control-plane-shell, auth config, docker compose.",
-    "blockedBy": ["P3-02", "P3-03"],
-    "labels": ["needs-human"]
+    "blockedBy": [
+      "P3-02",
+      "P3-03"
+    ],
+    "labels": [
+      "needs-human"
+    ]
   },
   {
     "id": "P3-05",
@@ -62,7 +69,9 @@
       "Playwright test covers search and detail navigation; axe-core finds no serious accessibility issues"
     ],
     "scope": "products/catalog-remote.",
-    "blockedBy": ["P3-04"],
+    "blockedBy": [
+      "P3-04"
+    ],
     "labels": []
   },
   {
@@ -76,7 +85,9 @@
       "Temporal test environment covers success, a failed validation, and retry of a flaky step"
     ],
     "scope": "products/run-orchestrator, docker compose.",
-    "blockedBy": ["P3-02"],
+    "blockedBy": [
+      "P3-02"
+    ],
     "labels": []
   },
   {
@@ -90,7 +101,10 @@
       "Playwright test drives a fake run from start to finish"
     ],
     "scope": "products/runs-remote, SSE endpoint in control-plane-api.",
-    "blockedBy": ["P3-05", "P3-06"],
+    "blockedBy": [
+      "P3-05",
+      "P3-06"
+    ],
     "labels": []
   },
   {
@@ -104,7 +118,9 @@
       "Expired waivers stop applying (test proves it)"
     ],
     "scope": "control-plane-api, pipelines/dagger, products/gates-remote.",
-    "blockedBy": ["P3-05"],
+    "blockedBy": [
+      "P3-05"
+    ],
     "labels": []
   },
   {
@@ -118,7 +134,9 @@
       "Playwright test fills the form and asserts the PR payload (GitHub API mocked)"
     ],
     "scope": "recipes/ schemas, products/product-studio-remote, control-plane-api.",
-    "blockedBy": ["P3-06"],
+    "blockedBy": [
+      "P3-06"
+    ],
     "labels": []
   },
   {
@@ -132,7 +150,9 @@
       "Save opens a PR; the impact report from P2-06 appears on it"
     ],
     "scope": "products/material-studio-remote, control-plane-api.",
-    "blockedBy": ["P3-05"],
+    "blockedBy": [
+      "P3-05"
+    ],
     "labels": []
   },
   {
@@ -146,7 +166,9 @@
       "Integration test publishes `spec.changed` and observes a `specChange` workflow start"
     ],
     "scope": "materials/factory-events, products/run-orchestrator, tools/.",
-    "blockedBy": ["P3-06"],
+    "blockedBy": [
+      "P3-06"
+    ],
     "labels": []
   },
   {
@@ -160,8 +182,16 @@
       "docs/install.md covers prerequisites, install, upgrade and uninstall"
     ],
     "scope": "deploy/, scripts/, docs/.",
-    "blockedBy": ["P3-07", "P3-08", "P3-09", "P3-10", "P3-11"],
-    "labels": ["needs-human"]
+    "blockedBy": [
+      "P3-07",
+      "P3-08",
+      "P3-09",
+      "P3-10",
+      "P3-11"
+    ],
+    "labels": [
+      "needs-human"
+    ]
   },
   {
     "id": "P3-13",
@@ -174,7 +204,66 @@
       "PROGRESS.md records the evidence and the planner opens `Gate 3 review` for a human"
     ],
     "scope": "docs/, seed data.",
-    "blockedBy": ["P3-12"],
+    "blockedBy": [
+      "P3-12",
+      "P3-14",
+      "P3-15",
+      "P3-16"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P3-14",
+    "title": "Ops factory: telemetry, SLOs, dashboards and alerts per product kind",
+    "goal": "Close the \"monitor\" step of the loop: every product the factory assembles is observable by default, and its SLO from product.yaml becomes real alerts.",
+    "acceptance": [
+      "Recipes wire OpenTelemetry traces, metrics and logs by default (Angular remote: web vitals and HTTP spans; NestJS: HTTP, DB spans), exporting to an OTLP endpoint from config",
+      "`operate.slo` in product.yaml (e.g. availability, lcp_p75) is emitted as an OpenSLO spec and turned into Prometheus recording and burn-rate alert rules with Sloth",
+      "A standard Grafana dashboard per product kind is generated as code (Grafonnet or JSON) and shipped in the product chart",
+      "Alertmanager routes burn-rate alerts with a runbook link per alert",
+      "docker compose (and the kind platform) gains an OpenTelemetry Collector, Prometheus, Loki, Tempo and Grafana; a test product shows up on its dashboard with live data (scripted check)",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "recipes/, a new materials type for SLOs, deploy/, docker-compose.yml, docs.",
+    "blockedBy": [],
+    "labels": []
+  },
+  {
+    "id": "P3-15",
+    "title": "Insights: delivery and agent metrics in the control plane",
+    "goal": "Our answer to Factory's analytics: show adoption and cost next to the outcomes that matter.",
+    "acceptance": [
+      "control-plane-api ingests events for runs, gate results, PRs (opened, merged, reworked) and deployments, and stores them per product and team",
+      "Metrics computed per team and product over 7/30/90 days: lead time for changes, change failure rate, gate pass rate, agent PR acceptance rate (merged without human rework), material adoption (share of products on released materials), recall exposure, and token cost when the model gateway reports it",
+      "`products/insights-remote` (angular-remote) shows the metrics with trends and a per-team breakdown; numbers are traceable to the underlying runs and PRs",
+      "Metric definitions are documented in docs/insights.md and covered by tests with fixture data",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "products/control-plane-api, products/insights-remote, docs.",
+    "blockedBy": [
+      "P3-02",
+      "P3-04",
+      "P3-08"
+    ],
+    "labels": []
+  },
+  {
+    "id": "P3-16",
+    "title": "Change campaigns: one goal, many dependency-ordered PRs",
+    "goal": "Our answer to Factory Missions: turn a goal (framework upgrade, material major bump, recall, compliance sweep) into a planned set of PRs across products and repos, run by the orchestrator with visible progress.",
+    "acceptance": [
+      "A campaign definition (YAML, validated by a JSON Schema) lists the goal, target products (explicit or a graph query such as \"consumers of orders-api@1\"), the change to apply per product (a factory command, a codemod, or an agent task with a context pack), the dependency order and a concurrency limit",
+      "Temporal workflow `campaign` plans tasks from the graph, runs them in dependency order with parallelism, opens one PR per product labelled `needs-review`, retries failures, and waits for merges before starting dependents",
+      "Two tasks never edit the same product at once; a failed task blocks only its dependents",
+      "The run control room shows the campaign as a tree with per-product status and links to PRs",
+      "End-to-end test: a campaign bumping orders-api 1.x to 2.0 across the four consumer products completes in the right order with fixtures",
+      "`pnpm nx affected -t lint test build --base=origin/main` exits 0"
+    ],
+    "scope": "products/run-orchestrator, products/control-plane-api, products/runs-remote, tools/factory.",
+    "blockedBy": [
+      "P3-06",
+      "P3-07"
+    ],
     "labels": []
   }
 ]
