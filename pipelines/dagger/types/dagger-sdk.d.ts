@@ -4,6 +4,7 @@ declare module '@dagger.io/dagger' {
   export interface Directory { readonly __brand: 'Directory'; entries(path?: string): Promise<string[]>; file(path: string): File; withDirectory(path: string, source: Directory): Directory; withFile(path: string, source: File): Directory }
   export interface File { readonly __brand: 'File'; contents(): Promise<string> }
   export interface Secret { readonly __brand: 'Secret' }
+  export interface Service { readonly __brand: 'Service' }
   export interface CacheVolume { readonly __brand: 'CacheVolume' }
   export interface Container {
     from(address: string): Container;
@@ -16,6 +17,9 @@ declare module '@dagger.io/dagger' {
     withSecretVariable(name: string, secret: Secret): Container;
     withUser(name: string): Container;
     withExposedPort(port: number): Container;
+    withEnvVariable(name: string, value: string): Container;
+    withServiceBinding(alias: string, service: Service): Container;
+    asService(): Service;
     withEntrypoint(args: string[]): Container;
     directory(path: string): Directory;
     file(path: string): File;
