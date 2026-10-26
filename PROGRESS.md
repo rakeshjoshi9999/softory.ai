@@ -54,6 +54,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - #104 P2-34 numeric non-root uid: PR open, needs-review (helm not run, not installed)
 
 - #108 P2-38 impact falls back to / unions lockfile consumers: PR open, needs-review
+- #109 P2-39 impact dry-run tri-state ok/skipped/failed: PR open, needs-review
 
 ## Next up
 - #76 P1-11: merged (PR #93); all phase-1 issues are closed.
@@ -92,6 +93,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - PR #128 (#99 P2-29) criterion 3: needs a human with a Dagger engine to create a nested `products/<x>/node_modules/marker`, run `dagger call -m pipelines/dagger ci --src=.` (or a container listing) and post the output showing the marker is absent; then re-label `needs-review`. Builder cannot run Dagger here.
 
 ## Run log
+- 2026-10-25 · #109 P2-39 · `assemble` is now `ok|skipped|failed`; network errors skipped (not failing `ok`), manifest errors still fail; 4 new/updated tests fail on old code · branch claude/109-impact-skipped
 <!-- Each run appends one line: date · issue · result · PR link -->
 - 2026-10-25 · planner (2nd run) · phase 2; no `Gate 2 review` issue and phase-2 work still open (#22, #90, #91, #98-#110, #122), so no gate opened and nothing relabelled; queue healthy (12 ready + unblocked: #99-#102, #104-#109, #122, plus needs-human #90/#91/#110; #103 waits on P2-32), no new tasks; no blocked/in-progress issue idle for 24 h (#98 pushed 02:09Z, draft PR #124). Note: the "In progress" list above is stale (#82-#89 are closed) · branch claude/planner-2026-10-25
 - 2026-10-25 · planner · #75 Gate 1 review closed as completed by rakeshjoshi9999 (2026-10-25T01:58Z), so phase set to 2 (Supply chain); no open or closed phase-2 issue was labelled `planned`, so nothing relabelled; resolved "Phase record" question removed; stopped per planner step 2 · branch claude/planner-2026-10-25
