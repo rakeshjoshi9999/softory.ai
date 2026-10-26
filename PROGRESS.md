@@ -17,6 +17,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
+- #122 P2-41 Dagger workspace binds a postgres:16-alpine service + TEST_DATABASE_URL: PR open, needs-review (CI dagger job on a graph-service PR not run here)
 - #106 P2-36 platform-up cosign precheck: PR open, needs-review (kind run needed by a human for 3x back-to-back)
 - #91 P2-27 builder claims an issue before working on it: PR open, needs-human + needs-review
 - #98 P2-28 Dagger index.ts type-checked: PR #124 open, needs-review (affected lint/test/build green)
@@ -169,3 +170,5 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · #106 P2-36 · platform-up.sh checks cosign up front when FACTORY_COSIGN_PUBLIC_KEY is unset (+ test running the script with fake tools; failed before); policy-Ready wait already on main (180s); `nx affected -t lint test build` green; kind 3x back-to-back not run (no cluster) · branch claude/106-platform-up-wait
 - 2026-10-25 · builder · synced PR #136 (#105) with main (kept both sides in PROGRESS/DECISIONS/platform.spec.ts); `nx affected -t lint test build` exit 0; pushed. Note: #106 still labelled in-progress/open although its fix merged in #137 — a human should close it · branch claude/105-policy-proof
 - 2026-10-25 · #108 P2-38 · impact unions graph and lockfile consumers, graph queried per pinned version, 4 new tests (3 fail on old code); `nx affected -t lint test build` green · branch claude/108-impact-lockfile-fallback
+- 2026-10-26 · builder · synced PR #138 (#107) with main (kept both sides; platform-test.sh = main's version plus the Argo CD restart), `nx affected -t lint test build` exit 0, pushed. Stale `in-progress` labels on #107-#109: #108/#109 merged (#139/#140), a human should close them · branch claude/107-policy-exclusions
+- 2026-10-26 · #122 P2-41 · POSTGRES_SERVICE in plan.ts (pure data + test), workspace() binds it and sets TEST_DATABASE_URL, SDK type stub extended; fixed a flaky SIGPIPE (exit 141) in platform.spec.ts fake docker/kubectl (they now drain stdin); `nx affected -t lint test build` green; Dagger engine not run · branch claude/122-dagger-postgres
