@@ -28,9 +28,12 @@ kind get clusters | grep -qx factory || kind create cluster --config deploy/plat
 
 # Point every node's containerd at the registry, and join it to the kind network.
 for node in $(kind get nodes --name factory); do
-  docker exec "$node" mkdir -p "/etc/containerd/certs.d/localhost:${REG_PORT}"
-  printf '[host."http://%s:5000"]\n' "$REG_NAME" |
-    docker exec -i "$node" tee "/etc/containerd/certs.d/localhost:${REG_PORT}/hosts.toml" >/dev/null
+  # localhost:5001 is the host's view; factory-registry:5000 is the address pods and Kyverno use.
+  for reg in "localhost:${REG_PORT}" "${REG_NAME}:5000"; do
+    docker exec "$node" mkdir -p "/etc/containerd/certs.d/$reg"
+    printf '[host."http://%s:5000"]\n' "$REG_NAME" |
+      docker exec -i "$node" tee "/etc/containerd/certs.d/$reg/hosts.toml" >/dev/null
+  done
 done
 docker network connect kind "$REG_NAME" 2>/dev/null || true
 
@@ -38,6 +41,11 @@ kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -n argocd --server-side -f "https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
 kubectl apply --server-side -f "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/install.yaml"
 kubectl -n argocd rollout status deploy/argocd-applicationset-controller --timeout=300s
+# The local registry speaks plain HTTP; Kyverno must be allowed to read signatures from it.
+if ! kubectl -n kyverno get deploy kyverno-admission-controller -o jsonpath='{.spec.template.spec.containers[0].args}' | grep -q allowInsecureRegistry; then
+  kubectl -n kyverno patch deploy kyverno-admission-controller --type=json \
+    -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--allowInsecureRegistry=true"}]'
+fi
 kubectl -n kyverno rollout status deploy/kyverno-admission-controller --timeout=300s
 
 kubectl apply -f deploy/platform/argocd/applicationset.yaml
@@ -46,7 +54,8 @@ if [ -z "$PUBKEY_FILE" ]; then
   keydir="$(mktemp -d)"
   (cd "$keydir" && COSIGN_PASSWORD= cosign generate-key-pair >/dev/null)
   PUBKEY_FILE="$keydir/cosign.pub"
-  echo "platform-up: generated throwaway cosign key in $keydir"
+  mkdir -p .platform && cp "$keydir/cosign.key" .platform/cosign.key
+  echo "platform-up: generated throwaway cosign key (private key in .platform/cosign.key)"
 fi
 # Indent the PEM to sit under the `publicKeys: |-` block in the policy.
 pemfile="$(mktemp)"
