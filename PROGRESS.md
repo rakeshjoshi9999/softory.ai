@@ -52,6 +52,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 
 - #104 P2-34 numeric non-root uid: PR open, needs-review (helm not run, not installed)
 
+- #105 P2-35 policy rejection test with positive control: PR open, needs-review (kind run not possible here)
 - #108 P2-38 impact falls back to / unions lockfile consumers: PR open, needs-review
 - #109 P2-39 impact dry-run tri-state ok/skipped/failed: PR open, needs-review
 
@@ -94,6 +95,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 ## Run log
 - 2026-10-25 · #109 P2-39 · `assemble` is now `ok|skipped|failed`; network errors skipped (not failing `ok`), manifest errors still fail; 4 new/updated tests fail on old code · branch claude/109-impact-skipped
 <!-- Each run appends one line: date · issue · result · PR link -->
+- 2026-10-25 · #105 P2-35 · platform-test.sh pushes unsigned+signed images at factory-registry:5000, asserts Kyverno `no signatures found` denial (extracted `classifyDenial`, tested), signed positive control, fake-tool tests incl. policy-removed fails; kind run not done (no cluster) · closed stale #104 (PR #135 merged) · branch claude/105-policy-proof
 - 2026-10-25 · planner (2nd run) · phase 2; no `Gate 2 review` issue and phase-2 work still open (#22, #90, #91, #98-#110, #122), so no gate opened and nothing relabelled; queue healthy (12 ready + unblocked: #99-#102, #104-#109, #122, plus needs-human #90/#91/#110; #103 waits on P2-32), no new tasks; no blocked/in-progress issue idle for 24 h (#98 pushed 02:09Z, draft PR #124). Note: the "In progress" list above is stale (#82-#89 are closed) · branch claude/planner-2026-10-25
 - 2026-10-25 · planner · #75 Gate 1 review closed as completed by rakeshjoshi9999 (2026-10-25T01:58Z), so phase set to 2 (Supply chain); no open or closed phase-2 issue was labelled `planned`, so nothing relabelled; resolved "Phase record" question removed; stopped per planner step 2 · branch claude/planner-2026-10-25
 - 2026-10-24 · #84 P2-20 · materials/graph-api (TypeSpec, Spectral, oasdiff, emitters), graph-service extends generated Ingest/Versions controllers (synced into gitignored src/generated), factory CLI uses one typed graph client checked against the spec; `nx affected -t lint test build` green (44 tasks) · branch claude/gifted-mendel-iqp4uc
@@ -163,5 +165,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · #110 P2-40 · impact.yml report step: failures (exit code + stderr) and unsupported names appear in impact.md; 2 tests run the step script (fail on old file); `nx affected -t lint test build` green; human must copy tools/factory/ci/impact.yml to .github/workflows/impact.yml (strip header comment) · branch claude/110-impact-yml-failures
 - 2026-10-25 · #103 P2-33 · service image gets runtime node_modules (npm install in node:22-slim stage), remote image gets index.html; `runtimePackageJson`/`imageRequiredPaths`/`remoteIndexHtml` in plan.ts + 5 tests; no open PRs to sync, closed stale #102; `nx affected -t lint test build` green; engine not run (no Docker) · branch claude/103-image-contents
 - 2026-10-25 · #104 P2-34 · factory-lib sets numeric runAsUser/runAsGroup/fsGroup (101 static sites, 65532 services, values override), Dagger service image user `65532`, chart test + chart-check.sh numeric check; closed stale #103 (PR #134 merged); `nx affected -t lint test build` green; helm not run · branch claude/gifted-mendel-zwy7h1
+- 2026-10-25 · builder · PR #136 (#105) review fix: require-signed-images policy ignores tlog/SCT so the tlog-less positive control is admitted; platform-e2e not run (no cluster); `nx affected -t lint test build` below · branch claude/105-policy-proof
 - 2026-10-25 · #106 P2-36 · platform-up.sh checks cosign up front when FACTORY_COSIGN_PUBLIC_KEY is unset (+ test running the script with fake tools; failed before); policy-Ready wait already on main (180s); `nx affected -t lint test build` green; kind 3x back-to-back not run (no cluster) · branch claude/106-platform-up-wait
+- 2026-10-25 · builder · synced PR #136 (#105) with main (kept both sides in PROGRESS/DECISIONS/platform.spec.ts); `nx affected -t lint test build` exit 0; pushed. Note: #106 still labelled in-progress/open although its fix merged in #137 — a human should close it · branch claude/105-policy-proof
 - 2026-10-25 · #108 P2-38 · impact unions graph and lockfile consumers, graph queried per pinned version, 4 new tests (3 fail on old code); `nx affected -t lint test build` green · branch claude/108-impact-lockfile-fallback

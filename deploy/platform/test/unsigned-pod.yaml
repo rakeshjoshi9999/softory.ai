@@ -6,4 +6,6 @@ metadata:
 spec:
   containers:
     - name: app
-      image: localhost:5001/unsigned:latest
+      # factory-registry:5000 resolves from the Kyverno pod and, through the containerd mirror, from
+      # the nodes; scripts/platform-test.sh pushes this image first.
+      image: factory-registry:5000/unsigned:latest
