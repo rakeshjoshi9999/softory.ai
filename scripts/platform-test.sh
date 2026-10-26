@@ -26,6 +26,10 @@ signed_digest="$(docker inspect --format '{{index .RepoDigests 0}}' "$REG_HOST/s
 COSIGN_PASSWORD="${COSIGN_PASSWORD:-}" cosign sign --yes --key "$KEY" --tlog-upload=false \
   --allow-insecure-registry "$REG_HOST/signed@$signed_digest" >/dev/null
 
+# The platform's own pods are exempt from the policy: restarting Argo CD must still come back Ready.
+kubectl -n argocd rollout restart deploy
+kubectl -n argocd rollout status deploy --timeout=300s
+
 kubectl create namespace policy-test --dry-run=client -o yaml | kubectl apply -f -
 kubectl delete pod unsigned signed -n policy-test --ignore-not-found --timeout=60s >/dev/null
 
