@@ -17,6 +17,16 @@ export function pnpmSetupCommands(): string[][] {
   return [['corepack', 'enable'], ['corepack', 'prepare', `pnpm@${PNPM_VERSION}`, '--activate']];
 }
 
+/** PostgreSQL service the test blocks bind (graph-service integration tests need a database). */
+export const POSTGRES_SERVICE = {
+  image: 'postgres:16-alpine',
+  alias: 'postgres',
+  port: 5432,
+  env: { POSTGRES_PASSWORD: 'factory-test', POSTGRES_USER: 'postgres', POSTGRES_DB: 'postgres' },
+  /** Env set on the workspace container so pg-fixture.ts uses the service instead of local binaries. */
+  clientEnv: { TEST_DATABASE_URL: 'postgresql://postgres:factory-test@postgres:5432/postgres' },
+} as const;
+
 const BASE_PATTERN = /^[A-Za-z0-9._\/-]+$/;
 
 const WORKSPACE_FILES = ['package.json', 'nx.json', 'pnpm-lock.yaml'] as const;

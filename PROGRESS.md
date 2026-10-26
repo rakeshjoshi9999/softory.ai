@@ -18,6 +18,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 
 ## In progress
 - #107 P2-37 policy exempts platform namespaces: PR open, needs-review (Argo CD restart on kind not run)
+- #122 P2-41 Dagger workspace binds a postgres:16-alpine service + TEST_DATABASE_URL: PR open, needs-review (CI dagger job on a graph-service PR not run here)
 - #106 P2-36 platform-up cosign precheck: PR open, needs-review (kind run needed by a human for 3x back-to-back)
 - #91 P2-27 builder claims an issue before working on it: PR open, needs-human + needs-review
 - #98 P2-28 Dagger index.ts type-checked: PR #124 open, needs-review (affected lint/test/build green)
@@ -171,3 +172,6 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - 2026-10-25 · #107 P2-37 · Kyverno policy `exclude` for argocd/kyverno/kube-system, platform-test.sh restarts Argo CD and waits Ready, 2 new spec tests; `nx affected -t lint test build` green; kind restart not run (no cluster); closed stale #106 (PR #137 merged); PR #136 current with main · branch claude/107-policy-exclusions
 - 2026-10-25 · builder · synced PR #136 (#105) with main (kept both sides in PROGRESS/DECISIONS/platform.spec.ts); `nx affected -t lint test build` exit 0; pushed. Note: #106 still labelled in-progress/open although its fix merged in #137 — a human should close it · branch claude/105-policy-proof
 - 2026-10-25 · #108 P2-38 · impact unions graph and lockfile consumers, graph queried per pinned version, 4 new tests (3 fail on old code); `nx affected -t lint test build` green · branch claude/108-impact-lockfile-fallback
+- 2026-10-26 · builder · synced PR #138 (#107) with main (kept both sides; platform-test.sh = main's version plus the Argo CD restart), `nx affected -t lint test build` exit 0, pushed. Stale `in-progress` labels on #107-#109: #108/#109 merged (#139/#140), a human should close them · branch claude/107-policy-exclusions
+- 2026-10-26 · #122 P2-41 · POSTGRES_SERVICE in plan.ts (pure data + test), workspace() binds it and sets TEST_DATABASE_URL, SDK type stub extended; fixed a flaky SIGPIPE (exit 141) in platform.spec.ts fake docker/kubectl (they now drain stdin); `nx affected -t lint test build` green; Dagger engine not run · branch claude/122-dagger-postgres
+- 2026-10-26 · builder · synced PR #138 (#107) with main again (kept both sides in PROGRESS), affected lint/test/build below · branch claude/107-policy-exclusions

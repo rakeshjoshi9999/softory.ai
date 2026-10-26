@@ -79,3 +79,15 @@ describe('Dagger workspace guard', () => {
     expect(src.indexOf('assertWorkspaceEntries(await src.entries()')).toBeLessThan(src.indexOf('pnpmSetupCommands().reduce'));
   });
 });
+
+import { POSTGRES_SERVICE } from '../src/plan.js';
+describe('POSTGRES_SERVICE', () => {
+  it('is a pinned image and the client URL points at its alias, port and credentials', () => {
+    expect(POSTGRES_SERVICE.image).toMatch(/^postgres:\d+(\.\d+)*-alpine$/);
+    const url = new URL(POSTGRES_SERVICE.clientEnv.TEST_DATABASE_URL);
+    expect(url.hostname).toBe(POSTGRES_SERVICE.alias);
+    expect(Number(url.port)).toBe(POSTGRES_SERVICE.port);
+    expect(url.username).toBe(POSTGRES_SERVICE.env.POSTGRES_USER);
+    expect(url.password).toBe(POSTGRES_SERVICE.env.POSTGRES_PASSWORD);
+  });
+});

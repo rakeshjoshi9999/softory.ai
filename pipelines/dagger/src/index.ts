@@ -1,5 +1,5 @@
-import { dag, Container, Directory, File, Secret, func, object } from '@dagger.io/dagger';
-import { DEPS_IMAGE, assertWorkspaceEntries, remoteIndexHtml, runtimeInstallCommand, runtimePackageJson, blockCommand, pnpmSetupCommands, ciCommands, imageOutDir, imageSpec, productBuildCommand, scanCommand, SOURCE_EXCLUDES, sbomCommand, signCommand, signImageCommand } from './plan.js';
+import { dag, Container, Directory, File, Secret, Service, func, object } from '@dagger.io/dagger';
+import { DEPS_IMAGE, POSTGRES_SERVICE, assertWorkspaceEntries, remoteIndexHtml, runtimeInstallCommand, runtimePackageJson, blockCommand, pnpmSetupCommands, ciCommands, imageOutDir, imageSpec, productBuildCommand, scanCommand, SOURCE_EXCLUDES, sbomCommand, signCommand, signImageCommand } from './plan.js';
 
 const NODE_IMAGE = 'node:22-bookworm';
 const SYFT_IMAGE = 'anchore/syft:v1.18.1';
@@ -17,7 +17,18 @@ export class Factory {
       .withMountedCache('/root/.local/share/pnpm/store', dag.cacheVolume('pnpm-store'))
       .withDirectory('/work', src, { exclude: [...SOURCE_EXCLUDES] })
       .withWorkdir('/work')
+      .withServiceBinding(POSTGRES_SERVICE.alias, this.postgres())
+      .withEnvVariable('TEST_DATABASE_URL', POSTGRES_SERVICE.clientEnv.TEST_DATABASE_URL)
       .withExec(['pnpm', 'install', '--frozen-lockfile']);
+  }
+
+  /** Pinned PostgreSQL service for tests that need a database. */
+  private postgres(): Service {
+    const { image, port, env } = POSTGRES_SERVICE;
+    return Object.entries(env)
+      .reduce((c, [k, v]) => c.withEnvVariable(k, v), dag.container().from(image))
+      .withExposedPort(port)
+      .asService();
   }
 
   /** Lint (all projects, or affected ones when `base` is given). */

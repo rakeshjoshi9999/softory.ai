@@ -107,10 +107,11 @@ describe('local platform (kind + Argo CD + Kyverno)', () => {
         writeFileSync(join(bin, name), `#!/usr/bin/env bash\n${body}\n`);
         chmodSync(join(bin, name), 0o755);
       };
-      fake('docker', 'case "$1" in inspect) echo factory-registry@sha256:abc;; esac');
+      fake('docker', '[ "$1" = build ] && cat >/dev/null; case "$1" in inspect) echo factory-registry@sha256:abc;; esac');
       fake('cosign', 'exit 0');
       // the unsigned pod gets the scripted result; everything else (namespace, signed pod) is accepted
-      fake('kubectl', `if [[ "$*" == *unsigned-pod.yaml* && "$1" == apply ]]; then echo '${applyOutput}'; exit ${applyStatus}; fi; exit 0`);
+      // drain stdin so the script's `... | docker build -` and `kubectl create | kubectl apply -f -` pipes never dies of SIGPIPE
+      fake('kubectl', `[[ "$*" == *' -f -'* ]] && cat >/dev/null; if [[ "$*" == *unsigned-pod.yaml* && "$1" == apply ]]; then echo '${applyOutput}'; exit ${applyStatus}; fi; exit 0`);
       const key = join(bin, 'cosign.key');
       writeFileSync(key, 'k');
       return spawnSync('bash', [join(root, 'scripts/platform-test.sh')], {
