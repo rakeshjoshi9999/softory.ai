@@ -17,7 +17,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - P2-14 assembly security (merged, PR #95; #78 closed)
 
 ## In progress
-- #122 P2-41 Dagger workspace binds a postgres:16-alpine service + TEST_DATABASE_URL: PR open, needs-review (CI dagger job on a graph-service PR not run here)
+- #122 P2-41 Dagger workspace binds a postgres:16-alpine service + TEST_DATABASE_URL: merged (PR #141), issue still open
 - #106 P2-36 platform-up cosign precheck: PR open, needs-review (kind run needed by a human for 3x back-to-back)
 - #91 P2-27 builder claims an issue before working on it: PR open, needs-human + needs-review
 - #98 P2-28 Dagger index.ts type-checked: PR #124 open, needs-review (affected lint/test/build green)
@@ -60,7 +60,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 ## Next up
 - #76 P1-11: merged (PR #93); all phase-1 issues are closed.
 - #75 Gate 1 review: closed as completed by a human (2026-10-25); phase set to 2.
-- #22 P2-12 Gate 2 demo once its Blocked-by tasks are done.
+- #22 P2-12 was closed (2026-10-25, by a human, no commit) but `scripts/gate2-demo.sh` does not exist; the demo is re-filed as #142 P2-42 (local, ready) and #143 P2-43 (live PRs, needs-human, blocked by P2-42).
 
 ## Gate 1 evidence (P1-10)
 - Contract test `materials/orders-api/test/contract.spec.ts` (runs in `nx test orders-api`, so in CI): generated Angular client over real HTTP against a Nest app on the generated controller base; every body is checked against `generated/openapi.yaml`.
@@ -72,6 +72,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
      A run cut off by the usage limit resumes from here after the reset. Remove the entry when the PR opens. -->
 
 ## Open questions for a human
+- Gate 2: #108, #109 and #122 are still open although their PRs merged (#139, #140, #141); please close them, otherwise the planner can never open `Gate 2 review`. #22 P2-12 was closed without the demo: was that intended? If you would rather run the Gate 2 demo by hand, close #142/#143 as not planned.
 - #99 / PR #128: needs a human with a Dagger engine to run the nested `node_modules` check (criterion 3) and post output on the PR, then re-label `needs-review`. Builder cannot (no Docker).
 - #85 P2-21: criterion 3 (`platform-e2e` workflow run) is not done: no such workflow exists and `.github/workflows/` is off-limits. Please add one running `scripts/platform-up.sh && scripts/platform-test.sh`, trigger it and link the result. The `charts` CI job should call `scripts/chart-check.sh`.
 - #87 P2-23: `impact.yml` (Verdaccio service, base-branch release, `--seed-registry`) was never run in Actions or against Verdaccio here; a human copies it to `.github/workflows/impact.yml` and checks the first PR comment says "Dry-run assembly: run". It also folds in the safe `BASE_REF` env from #90.
@@ -94,6 +95,7 @@ Current phase: **Phase 2 — Supply chain** (goal: Gate 2, a spec change reaches
 - PR #128 (#99 P2-29) criterion 3: needs a human with a Dagger engine to create a nested `products/<x>/node_modules/marker`, run `dagger call -m pipelines/dagger ci --src=.` (or a container listing) and post the output showing the marker is absent; then re-label `needs-review`. Builder cannot run Dagger here.
 
 ## Run log
+- 2026-10-26 · planner · phase 2; no `Gate 2 review` issue; open phase-2 issues #107 (PR #138 needs-human, pushed 02:08Z) and #108/#109/#122 (PRs merged, issues not closed), so no gate opened. Queue: no ready+unblocked task left and `scripts/gate2-demo.sh` missing although #22 is closed, so filed #142 [P2-42] (local demo, ready) and #143 [P2-43] (live mode, needs-human, blocked by P2-42); no idle blocked/in-progress issue · branch claude/planner-2026-10-26
 - 2026-10-25 · #109 P2-39 · `assemble` is now `ok|skipped|failed`; network errors skipped (not failing `ok`), manifest errors still fail; 4 new/updated tests fail on old code · branch claude/109-impact-skipped
 <!-- Each run appends one line: date · issue · result · PR link -->
 - 2026-10-25 · #105 P2-35 · platform-test.sh pushes unsigned+signed images at factory-registry:5000, asserts Kyverno `no signatures found` denial (extracted `classifyDenial`, tested), signed positive control, fake-tool tests incl. policy-removed fails; kind run not done (no cluster) · closed stale #104 (PR #135 merged) · branch claude/105-policy-proof
